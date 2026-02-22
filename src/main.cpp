@@ -28,7 +28,6 @@ DNSServer dnsServer;
 char ssid[32] = "";
 char password[64] = "";
 String apName;
-char weather_city[64] = "";
 lv_obj_t *load_label = nullptr;
 
 // =============================================================================
@@ -167,11 +166,11 @@ void fetch_weather() {
 
   HTTPClient http;
   // Формирование URL запроса с учетом города, API-ключа и локализации
-  String url = "http://api.openweathermap.org/data/2.5/weather?q=" +
-               String(weather_city) + "&appid=" + String(weatherApiKey) +
-               "&units=metric&lang=ru";
+  String url =
+      "http://api.openweathermap.org/data/2.5/weather?q=" + String(city) +
+      "&appid=" + String(weatherApiKey) + "&units=metric&lang=ru";
 
-  logInfo("Weather update request for %s", weather_city);
+  logInfo("Weather update request for %s", city);
   http.begin(url);
 
   int httpCode = http.GET();
@@ -319,8 +318,6 @@ void setup() {
   strlcpy(ssid, preferences.getString("ssid", "").c_str(), sizeof(ssid));
   strlcpy(password, preferences.getString("pass", "").c_str(),
           sizeof(password));
-  strlcpy(weather_city, preferences.getString("city", city).c_str(),
-          sizeof(weather_city));
 
   dayBrightness = preferences.getInt("day_br", 255);
   nightBrightness = preferences.getInt("night_br", 20);
