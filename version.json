@@ -1,5 +1,5 @@
 {
   "version": "0.0.4",
-  "url": "https://raw.githubusercontent.com/MJeka/Clock_ESP32/refs/heads/dev/version.json?token=GHSAT0AAAAAADTUDYQEXUN3T27RH4PPU3GU2M3OEAA",
-  "bin": "https://raw.githubusercontent.com/MJeka/Clock_ESP32/refs/heads/dev/firmware.bin?token=GHSAT0AAAAAADTUDYQFVWZNA3EUVJDFLYWG2M3OAUA"
+  "url": "https://raw.githubusercontent.com/MJeka/Clock_ESP32/refs/heads/dev/version.json",
+  "bin": "https://github.com/MJeka/Clock_ESP32/raw/refs/heads/dev/firmware.bin"
 }
