@@ -27,6 +27,7 @@ extern int nightBrightness;
 extern int nightStartHour;
 extern int nightEndHour;
 extern void check_brightness(struct tm *timeinfo = nullptr);
+extern void fetch_weather();
 
 // =============================================================================
 // ЛОГИРОВАНИЕ И ИНТЕРФЕЙС
@@ -151,6 +152,7 @@ String scanNetworks() {
 
 void handleSaveSettings() {
   if (server.hasArg("d_br")) {
+    String oldCity = String(weather_city);
     preferences.begin("wifi-config", false);
 
     // Настройки яркости и времени
@@ -196,6 +198,14 @@ void handleSaveSettings() {
 
     preferences.end();
     check_brightness(); // Мгновенное обновление яркости после сохранения
+
+    // Если город изменился — сразу обновляем погоду
+    if (oldCity != String(weather_city)) {
+      logInfo("City changed from %s to %s. Updating weather...",
+              oldCity.c_str(), weather_city);
+      fetch_weather();
+    }
+
     logInfo("Device settings saved. City: %s", weather_city);
     server.sendHeader("Location", "/");
     server.send(303);
