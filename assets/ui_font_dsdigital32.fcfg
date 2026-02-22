@@ -1,0 +1,16 @@
+{
+  "codename": "dsdigital32",
+  "ttf_path": "/assets/7fonts.ru_DS-DIGIB.TTF",
+  "bin_path": "/assets/ui_font_dsdigital32.bin",
+  "c_path": "/assets/ui_font_dsdigital32.c",
+  "cfg_path": "/assets/ui_font_dsdigital32.fcfg",
+  "size": 32,
+  "bpp": 4,
+  "letters": 0,
+  "ranges": [
+    "0x20-0x7f"
+  ],
+  "symbols": "",
+  "customparams": "--no-compress --no-prefilter",
+  "uploaded": false
+}

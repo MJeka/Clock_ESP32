@@ -1,0 +1,16 @@
+{
+  "codename": "roboto64",
+  "ttf_path": "/assets/Roboto-Bold.ttf",
+  "bin_path": "/assets/ui_font_roboto64.bin",
+  "c_path": "/assets/ui_font_roboto64.c",
+  "cfg_path": "/assets/ui_font_roboto64.fcfg",
+  "size": 64,
+  "bpp": 4,
+  "letters": 0,
+  "ranges": [
+    "0x20-0x7f"
+  ],
+  "symbols": "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя:,.₴|°",
+  "customparams": "--no-compress --no-prefilter",
+  "uploaded": false
+}
