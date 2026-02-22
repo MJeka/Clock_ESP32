@@ -316,6 +316,7 @@ void setup() {
 
   // Загрузка конфигурации из памяти
   preferences.begin("wifi-config", true);
+  strlcpy(ssid, preferences.getString("ssid", "").c_str(), sizeof(ssid));
   strlcpy(password, preferences.getString("pass", "").c_str(),
           sizeof(password));
   strlcpy(weather_city, preferences.getString("city", city).c_str(),
