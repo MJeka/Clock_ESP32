@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Size: 120 px
  * Bpp: 4
- * Opts: --bpp 4 --size 120 --font /Users/jeka/Documents/Arduino/TFT_Arduino/assets/7fonts.ru_DS-DIGIB.TTF -o /Users/jeka/Documents/Arduino/TFT_Arduino/assets/ui_font_dsdigital120.c --format lvgl -r 0x20-0x7f --no-compress --no-prefilter
+ * Opts: --bpp 4 --size 120 --font /Users/jeka/Documents/Arduino/Clock_ESP32/assets/7fonts.ru_DS-DIGIB.TTF -o /Users/jeka/Documents/Arduino/Clock_ESP32/assets/ui_font_dsdigital120.c --format lvgl -r 0x20-0x7f --no-compress --no-prefilter
  ******************************************************************************/
 
 #include "ui.h"

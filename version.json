@@ -1,0 +1,5 @@
+{
+  "version": "0.0.4",
+  "url": "https://raw.githubusercontent.com/user/repo/main/version.json",
+  "bin": "https://raw.githubusercontent.com/user/repo/main/firmware.bin"
+}

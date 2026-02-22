@@ -8,6 +8,7 @@
 #include <TFT_eSPI.h> // Графический драйвер нижнего уровня (инициализация и управление дисплеем)
 #include <WiFi.h> // Сетевой стек 802.11 (управление радиомодулем, режимы STA и AP)
 #include <lvgl.h> // Движок графического интерфейса пользователя (UI Engine)
+#include <AutoOTA.h>    // Автообновление прошивки по HTTP/HTTPS (GitHub/Server)
 
 // =============================================================================
 // ГЛОБАЛЬНЫЕ ОБЪЕКТЫ
@@ -16,6 +17,9 @@ TFT_eSPI tft = TFT_eSPI();
 Preferences preferences;
 WebServer server(80);
 DNSServer dnsServer;
+
+// Экземпляр OTA. Макросы подставляются скриптом read_version.py при сборке.
+AutoOTA ota(FIRMWARE_VERSION, JSON_URL);
 
 // =============================================================================
 // ПЕРЕМЕННЫЕ ДАННЫХ
@@ -61,6 +65,19 @@ const char *months_ru[] = {"января",   "февраля", "марта",  "�
 
 static lv_disp_draw_buf_t draw_buf;
 static lv_color_t buf[320 * 20];
+
+// =============================================================================
+// ОБНОВЛЕНИЕ ПРОШИВКИ
+// =============================================================================
+
+/**
+ * @brief Функция-обработчик событий OTA.
+ * Вызывается автоматически библиотекой перед началом загрузки новой прошивки.
+ */
+void onUpdateStart() {
+    Serial.println(F("[SYSTEM] OTA: Начало загрузки обновления..."));
+    // Здесь можно корректно завершить работу LVGL или сохранить данные в базу (GyverDB)
+}
 
 // =============================================================================
 // ПОГОДА
@@ -315,6 +332,20 @@ void check_brightness(struct tm *timeinfo) {
 
 void setup() {
   Serial.begin(115200);
+  
+  delay(500);
+
+  logInfo("========================================");
+  logInfo("Device: ESP32 | Build: %s\n", __DATE__);
+  logInfo("Current FW Version: %s\n", FIRMWARE_VERSION);
+  logInfo("Update Endpoint: %s\n", JSON_URL);
+  logInfo("========================================");
+
+  // Регистрация обработчика события начала обновления
+  ota.onUpdate(onUpdateStart);
+
+  // Запуск первичной проверки версии (требует активного Wi-Fi соединения)
+  ota.checkUpdate();
 
   // Загрузка конфигурации из памяти
   preferences.begin("wifi-config", true);
@@ -485,6 +516,14 @@ void loop() {
   if (millis() - lastWeatherCheck > weatherInterval) {
     fetch_weather();
     lastWeatherCheck = millis();
+  }
+
+  // Планировщик проверки обновлений (раз в 12 часов)
+  static uint32_t lastOtaCheck = 0;
+  if (millis() - lastOtaCheck >= 43200000UL) { 
+      lastOtaCheck = millis();
+      logInfo("[SYSTEM] Запланированная проверка обновлений...");
+      ota.checkUpdate();
   }
 
   // Система: Маленькая пауза для стабильности Wi-Fi стека и разгрузки

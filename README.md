@@ -1,4 +1,4 @@
-# TFT Arduino PlatformIO Project
+# Clock ESP32 Project
 
 Проект перенесен из Arduino IDE в PlatformIO. Основной код (`main.cpp`) полностью оригинальный и поддерживает функции Arduino Core 3.0 (например, `ledcAttach`).
 
