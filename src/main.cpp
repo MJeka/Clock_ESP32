@@ -75,7 +75,7 @@ static lv_color_t buf[320 * 20];
  * Вызывается автоматически библиотекой перед началом загрузки новой прошивки.
  */
 void onUpdateStart() {
-    Serial.println(F("[SYSTEM] OTA: Начало загрузки обновления..."));
+    logInfo("[SYSTEM] OTA: Начало загрузки обновления...");
     // Здесь можно корректно завершить работу LVGL или сохранить данные в базу (GyverDB)
 }
 
@@ -166,7 +166,7 @@ void update_weather_icon(const char *icon_id) {
   lv_img_set_src(ui_uiLabelWeather, target_img);
 
   // Логирование в Serial для верификации работы парсера
-  Serial.printf("UI_RENDER: Applied icon source for code: %s\n", icon_id);
+  logInfo("UI_RENDER: Applied icon source for code: %s\n", icon_id);
 }
 
 /**
@@ -321,7 +321,7 @@ void check_brightness(struct tm *timeinfo) {
     ledcWrite(ledPin, targetBrightness);
     lastAppliedBrightness = targetBrightness;
 
-    Serial.printf("[SYSTEM] Brightness updated to %d (Mode: %s)\n",
+    logInfo("[SYSTEM] Brightness updated to %d (Mode: %s)\n",
                   targetBrightness, isNight ? "NIGHT" : "DAY");
   }
 }
@@ -340,12 +340,6 @@ void setup() {
   logInfo("Current FW Version: %s\n", FIRMWARE_VERSION);
   logInfo("Update Endpoint: %s\n", JSON_URL);
   logInfo("========================================");
-
-  // Регистрация обработчика события начала обновления
-  ota.onUpdate(onUpdateStart);
-
-  // Запуск первичной проверки версии (требует активного Wi-Fi соединения)
-  ota.checkUpdate();
 
   // Загрузка конфигурации из памяти
   preferences.begin("wifi-config", true);
@@ -446,6 +440,7 @@ void setup() {
     int ntp_retry = 0;
     struct tm ti;
     while (!getLocalTime(&ti) && ntp_retry < 10) {
+      ArduinoOTA.handle(); // Позволит прошить устройство, даже если NTP завис
       lv_timer_handler();
       delay(500);
       ntp_retry++;
@@ -480,6 +475,16 @@ void setup() {
     lv_refr_now(NULL);
 
     logInfo("System Ready and Interface Visible!");
+
+    // Даем системе 100мс на завершение сетевых операций
+    yield(); 
+    delay(100);
+
+    logInfo("[OTA] Запуск первичной проверки версии...");
+    
+    // Запуск первичной проверки версии (требует активного Wi-Fi соединения)
+    ota.checkUpdate();
+  
   } else {
     // Если WiFi не найден — уходим в режим настройки
     update_screen_status("Ошибка WiFi!\nРежим настройки...");
@@ -500,28 +505,36 @@ void loop() {
   // Служба OTA: Проверка входящих пакетов прошивки (вызывать максимально часто)
   ArduinoOTA.handle();
 
+// AutoOTA.tick() возвращает true в момент, когда НАЧАЛОСЬ скачивание новой версии
+  if (ota.tick()) {
+      logInfo("[SYSTEM] Найдено обновление! Приостановка фоновых задач...");
+      // Здесь можно поставить флаг, чтобы остановить fetch_weather и прочее
+  }
+
   // Сервер: Обработка запросов веб-интерфейса настроек
   server.handleClient();
 
   // Графика: Вызов обработчика таймеров и отрисовки LVGL
   lv_timer_handler();
 
+  // Берем время
+  uint32_t now = millis(); 
   // Интерфейс: Обновление времени/даты раз в секунду
-  if (millis() - lastUpdateTime > 1000) {
+  if (now - lastUpdateTime > 1000) {
     update_ui_elements();
-    lastUpdateTime = millis();
+    lastUpdateTime = now;
   }
 
   // Данные: Запрос погоды по заданному интервалу
-  if (millis() - lastWeatherCheck > weatherInterval) {
+  if (now - lastWeatherCheck > weatherInterval) {
     fetch_weather();
-    lastWeatherCheck = millis();
+    lastWeatherCheck = now;
   }
 
   // Планировщик проверки обновлений (раз в 12 часов)
   static uint32_t lastOtaCheck = 0;
-  if (millis() - lastOtaCheck >= 43200000UL) { 
-      lastOtaCheck = millis();
+  if (now - lastOtaCheck >= 43200000UL) { 
+      lastOtaCheck = now;
       logInfo("[SYSTEM] Запланированная проверка обновлений...");
       ota.checkUpdate();
   }
