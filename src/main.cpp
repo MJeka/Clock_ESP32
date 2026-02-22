@@ -10,11 +10,6 @@
 #include <lvgl.h> // Движок графического интерфейса пользователя (UI Engine)
 
 // =============================================================================
-// ПРОТОТИПЫ ФУНКЦИЙ
-// =============================================================================
-void check_brightness(struct tm &timeinfo);
-
-// =============================================================================
 // ГЛОБАЛЬНЫЕ ОБЪЕКТЫ
 // =============================================================================
 TFT_eSPI tft = TFT_eSPI();
@@ -28,6 +23,7 @@ DNSServer dnsServer;
 char ssid[32] = "";
 char password[64] = "";
 String apName;
+char weather_city[64] = "";
 lv_obj_t *load_label = nullptr;
 
 // =============================================================================
@@ -166,11 +162,11 @@ void fetch_weather() {
 
   HTTPClient http;
   // Формирование URL запроса с учетом города, API-ключа и локализации
-  String url =
-      "http://api.openweathermap.org/data/2.5/weather?q=" + String(city) +
-      "&appid=" + String(weatherApiKey) + "&units=metric&lang=ru";
+  String url = "http://api.openweathermap.org/data/2.5/weather?q=" +
+               String(weather_city) + "&appid=" + String(weatherApiKey) +
+               "&units=metric&lang=ru";
 
-  logInfo("Weather update request for %s", city);
+  logInfo("Weather update request for %s", weather_city);
   http.begin(url);
 
   int httpCode = http.GET();
@@ -225,7 +221,7 @@ void update_ui_elements() {
     if (timeinfo.tm_min != last_drawn_min) {
 
       // Сначала проверяем и устанавливаем яркость (Night Mode Logic)
-      check_brightness(timeinfo);
+      check_brightness(&timeinfo);
 
       // Обновляем время
       strftime(buf_tmp, sizeof(buf_tmp), "%H:%M", &timeinfo);
@@ -275,8 +271,15 @@ void update_ui_elements() {
 /**
  * @brief Проверяет текущее время и корректирует яркость подсветки дисплея.
  */
-void check_brightness(struct tm &timeinfo) {
-  int currentHour = timeinfo.tm_hour;
+void check_brightness(struct tm *timeinfo) {
+  struct tm timeinfo_local;
+  if (timeinfo == nullptr) {
+    if (!getLocalTime(&timeinfo_local))
+      return;
+    timeinfo = &timeinfo_local;
+  }
+
+  int currentHour = timeinfo->tm_hour;
   static int lastAppliedBrightness =
       -1; // Храним состояние, чтобы не дергать ШИМ зря
   int targetBrightness;
@@ -318,6 +321,8 @@ void setup() {
   strlcpy(ssid, preferences.getString("ssid", "").c_str(), sizeof(ssid));
   strlcpy(password, preferences.getString("pass", "").c_str(),
           sizeof(password));
+  strlcpy(weather_city, preferences.getString("city", city).c_str(),
+          sizeof(weather_city));
 
   dayBrightness = preferences.getInt("day_br", 255);
   nightBrightness = preferences.getInt("night_br", 20);
