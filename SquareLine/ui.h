@@ -62,6 +62,7 @@ LV_FONT_DECLARE( ui_font_roboto36);
 LV_FONT_DECLARE( ui_font_roboto42);
 LV_FONT_DECLARE( ui_font_roboto48);
 LV_FONT_DECLARE( ui_font_roboto64);
+LV_FONT_DECLARE( ui_font_dsdigital40);
 
 // UI INIT
 void ui_init(void);

@@ -37,6 +37,7 @@ SET(SOURCES ui_Screen1.c
     fonts/ui_font_roboto36.c
     fonts/ui_font_roboto42.c
     fonts/ui_font_roboto48.c
-    fonts/ui_font_roboto64.c)
+    fonts/ui_font_roboto64.c
+    fonts/ui_font_dsdigital40.c)
 
 add_library(ui ${SOURCES})

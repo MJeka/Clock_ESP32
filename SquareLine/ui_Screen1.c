@@ -48,7 +48,7 @@ lv_obj_set_align( ui_uiLabelMonth1, LV_ALIGN_CENTER );
 lv_label_set_text(ui_uiLabelMonth1,"21.02.2026");
 lv_obj_set_style_text_color(ui_uiLabelMonth1, lv_color_hex(0x00FFA8), LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_text_opa(ui_uiLabelMonth1, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
-lv_obj_set_style_text_font(ui_uiLabelMonth1, &ui_font_dsdigital32, LV_PART_MAIN| LV_STATE_DEFAULT);
+lv_obj_set_style_text_font(ui_uiLabelMonth1, &ui_font_dsdigital40, LV_PART_MAIN| LV_STATE_DEFAULT);
 
 ui_uiLabelYear1 = lv_label_create(ui_Screen1);
 lv_obj_set_width( ui_uiLabelYear1, LV_SIZE_CONTENT);  /// 1
@@ -125,7 +125,7 @@ lv_obj_set_y( ui_Image4, 48 );
 lv_obj_set_align( ui_Image4, LV_ALIGN_CENTER );
 lv_obj_add_flag( ui_Image4, LV_OBJ_FLAG_ADV_HITTEST );   /// Flags
 lv_obj_clear_flag( ui_Image4, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-lv_img_set_pivot(ui_Image4,100,100);
+lv_img_set_zoom(ui_Image4,300);
 lv_obj_set_style_img_recolor(ui_Image4, lv_color_hex(0xFCED00), LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_img_recolor_opa(ui_Image4, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
 
@@ -138,6 +138,7 @@ lv_obj_set_y( ui_Image5, 78 );
 lv_obj_set_align( ui_Image5, LV_ALIGN_CENTER );
 lv_obj_add_flag( ui_Image5, LV_OBJ_FLAG_ADV_HITTEST );   /// Flags
 lv_obj_clear_flag( ui_Image5, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+lv_img_set_zoom(ui_Image5,300);
 lv_obj_set_style_img_recolor(ui_Image5, lv_color_hex(0x66D9FA), LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_img_recolor_opa(ui_Image5, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
 
@@ -150,6 +151,7 @@ lv_obj_set_y( ui_Image6, 105 );
 lv_obj_set_align( ui_Image6, LV_ALIGN_CENTER );
 lv_obj_add_flag( ui_Image6, LV_OBJ_FLAG_ADV_HITTEST );   /// Flags
 lv_obj_clear_flag( ui_Image6, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+lv_img_set_zoom(ui_Image6,220);
 lv_obj_set_style_img_recolor(ui_Image6, lv_color_hex(0xFFFFFF), LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_img_recolor_opa(ui_Image6, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
 
