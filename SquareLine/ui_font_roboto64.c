@@ -1,7 +1,7 @@
 /*******************************************************************************
  * Size: 64 px
  * Bpp: 4
- * Opts: --bpp 4 --size 64 --font /Users/jeka/Documents/Arduino/TFT_Arduino/assets/Roboto-Bold.ttf -o /Users/jeka/Documents/Arduino/TFT_Arduino/assets/ui_font_roboto64.c --format lvgl -r 0x20-0x7f --symbols 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя:,.₴|° --no-compress --no-prefilter
+ * Opts: --bpp 4 --size 64 --font /Users/jeka/Documents/Arduino/Clock_ESP32/assets/Roboto-Bold.ttf -o /Users/jeka/Documents/Arduino/Clock_ESP32/assets/ui_font_roboto64.c --format lvgl -r 0x20-0x7f --symbols 0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдеёжзийклмнопрстуфхцчшщъыьэюя:,.₴|° --no-compress --no-prefilter
  ******************************************************************************/
 
 #include "ui.h"

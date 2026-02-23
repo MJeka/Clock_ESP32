@@ -14,6 +14,8 @@ SET(SOURCES ui_Screen1.c
     fonts/ui_font_digital48.c
     fonts/ui_font_dsdigital120.c
     fonts/ui_font_dsdigital128.c
+    fonts/ui_font_dsdigital24.c
+    fonts/ui_font_dsdigital32.c
     fonts/ui_font_dsdigital48.c
     fonts/ui_font_dsdigital64.c
     fonts/ui_font_dsdigital72.c
@@ -21,7 +23,7 @@ SET(SOURCES ui_Screen1.c
     fonts/ui_font_roboto24.c
     fonts/ui_font_roboto48.c
     fonts/ui_font_roboto64.c
-    fonts/ui_font_dsdigital24.c
-    fonts/ui_font_dsdigital32.c)
+    fonts/ui_font_roboto42.c
+    fonts/ui_font_roboto36.c)
 
 add_library(ui ${SOURCES})

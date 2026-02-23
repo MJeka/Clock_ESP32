@@ -62,7 +62,7 @@ def copy_firmware_to_root(source, target, env):
 # --- ЛОГИКА ЗАПУСКА ---
 
 # 1. Сначала подготавливаем конфигурацию (выполняется при запуске скрипта)
-load_ota_configuration()
+# load_ota_configuration()
 
 # 2. Регистрируем Post-Action: копирование бинарника после сборки
 # $BUILD_DIR/${PROGNAME}.bin - это стандартный путь PlatformIO к итоговому файлу

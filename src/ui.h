@@ -61,6 +61,8 @@ LV_FONT_DECLARE(ui_font_dsdigital64);
 LV_FONT_DECLARE(ui_font_dsdigital72);
 LV_FONT_DECLARE(ui_font_dsdigital96);
 LV_FONT_DECLARE(ui_font_roboto24);
+LV_FONT_DECLARE(ui_font_roboto36);
+LV_FONT_DECLARE(ui_font_roboto42);
 LV_FONT_DECLARE(ui_font_roboto48);
 LV_FONT_DECLARE(ui_font_roboto64);
 LV_FONT_DECLARE(ui_font_dsdigital24);

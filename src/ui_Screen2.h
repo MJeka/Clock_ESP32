@@ -29,6 +29,7 @@ extern lv_obj_t *ui_Image6;
 extern lv_obj_t *ui_Panel4;
 extern lv_obj_t *ui_Panel5;
 extern lv_obj_t *ui_Panel6;
+extern lv_obj_t *ui_Container2;
 extern lv_obj_t *ui_uiLabelWeather;
 // CUSTOM VARIABLES
 
@@ -37,3 +38,4 @@ extern lv_obj_t *ui_uiLabelWeather;
 #endif
 
 #endif
+
