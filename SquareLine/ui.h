@@ -17,7 +17,6 @@ extern "C" {
 
 ///////////////////// SCREENS ////////////////////
 #include "ui_Screen1.h"
-#include "ui_Screen2.h"
 
 ///////////////////// VARIABLES ////////////////////
 
@@ -28,6 +27,20 @@ extern lv_obj_t *ui____initial_actions0;
 LV_IMG_DECLARE( ui_img_1605233879);   // assets/thermometer-custom.png
 LV_IMG_DECLARE( ui_img_1620110196);   // assets/water-percent-custom.png
 LV_IMG_DECLARE( ui_img_463316836);   // assets/gauge-custom.png
+LV_IMG_DECLARE( ui_img_01d_64_png);   // assets/01d_64.png
+LV_IMG_DECLARE( ui_img_01n_64_png);   // assets/01n_64.png
+LV_IMG_DECLARE( ui_img_02d_64_png);   // assets/02d_64.png
+LV_IMG_DECLARE( ui_img_02n_64_png);   // assets/02n_64.png
+LV_IMG_DECLARE( ui_img_03d_64_png);   // assets/03d_64.png
+LV_IMG_DECLARE( ui_img_04d_64_png);   // assets/04d_64.png
+LV_IMG_DECLARE( ui_img_09d_64_png);   // assets/09d_64.png
+LV_IMG_DECLARE( ui_img_10d_64_png);   // assets/10d_64.png
+LV_IMG_DECLARE( ui_img_10n_64_png);   // assets/10n_64.png
+LV_IMG_DECLARE( ui_img_11d_64_png);   // assets/11d_64.png
+LV_IMG_DECLARE( ui_img_11n_64_png);   // assets/11n_64.png
+LV_IMG_DECLARE( ui_img_13d_64_png);   // assets/13d_64.png
+LV_IMG_DECLARE( ui_img_13n_64_png);   // assets/13n_64.png
+LV_IMG_DECLARE( ui_img_50d_64_png);   // assets/50d_64.png
 
 // FONTS
 LV_FONT_DECLARE( ui_font_DSEG7100);
@@ -45,10 +58,10 @@ LV_FONT_DECLARE( ui_font_dsdigital64);
 LV_FONT_DECLARE( ui_font_dsdigital72);
 LV_FONT_DECLARE( ui_font_dsdigital96);
 LV_FONT_DECLARE( ui_font_roboto24);
+LV_FONT_DECLARE( ui_font_roboto36);
+LV_FONT_DECLARE( ui_font_roboto42);
 LV_FONT_DECLARE( ui_font_roboto48);
 LV_FONT_DECLARE( ui_font_roboto64);
-LV_FONT_DECLARE( ui_font_roboto42);
-LV_FONT_DECLARE( ui_font_roboto36);
 
 // UI INIT
 void ui_init(void);

@@ -10,14 +10,13 @@
 extern "C" {
 #endif
 
-#include "lvgl.h"
+    #include "lvgl.h"
 
-#include "ui_events.h"
 #include "ui_helpers.h"
+#include "ui_events.h"
 
 ///////////////////// SCREENS ////////////////////
 #include "ui_Screen1.h"
-#include "ui_Screen2.h"
 
 ///////////////////// VARIABLES ////////////////////
 
@@ -25,48 +24,44 @@ extern "C" {
 extern lv_obj_t *ui____initial_actions0;
 
 // IMAGES AND IMAGE SETS
-LV_IMG_DECLARE(ui_img_1605233879); // assets/thermometer-custom.png
-LV_IMG_DECLARE(ui_img_1620110196); // assets/water-percent-custom.png
-LV_IMG_DECLARE(ui_img_463316836);  // assets/gauge-custom.png
-LV_IMG_DECLARE(ui_img_1238027437); // assets/02n@2x.png
-LV_IMG_DECLARE(ui_img_1700430416); // assets/01d@2x.png
-LV_IMG_DECLARE(ui_img_1232099950); // assets/01n@2x.png
-LV_IMG_DECLARE(ui_img_1706357903); // assets/02d@2x.png
-LV_IMG_DECLARE(ui_img_1707406414); // assets/03d@2x.png
-LV_IMG_DECLARE(ui_img_1239075948); // assets/03n@2x.png
-LV_IMG_DECLARE(ui_img_1694638229); // assets/04d@2x.png
-LV_IMG_DECLARE(ui_img_1226307763); // assets/04n@2x.png
-LV_IMG_DECLARE(ui_img_1690960472); // assets/09d@2x.png
-LV_IMG_DECLARE(ui_img_1222630006); // assets/09n@2x.png
-LV_IMG_DECLARE(ui_img_1131223562); // assets/10d@2x.png
-LV_IMG_DECLARE(ui_img_1599554028); // assets/10n@2x.png
-LV_IMG_DECLARE(ui_img_1130175051); // assets/11d@2x.png
-LV_IMG_DECLARE(ui_img_1598505517); // assets/11n@2x.png
-LV_IMG_DECLARE(ui_img_1123199053); // assets/13d@2x.png
-LV_IMG_DECLARE(ui_img_1591529519); // assets/13n@2x.png
-LV_IMG_DECLARE(ui_img_1308932194); // assets/50d@2x.png
-LV_IMG_DECLARE(ui_img_840601728);  // assets/50n@2x.png
+LV_IMG_DECLARE( ui_img_1605233879);   // assets/thermometer-custom.png
+LV_IMG_DECLARE( ui_img_1620110196);   // assets/water-percent-custom.png
+LV_IMG_DECLARE( ui_img_463316836);   // assets/gauge-custom.png
+LV_IMG_DECLARE( ui_img_01d_64_png);   // assets/01d_64.png
+LV_IMG_DECLARE( ui_img_01n_64_png);   // assets/01n_64.png
+LV_IMG_DECLARE( ui_img_02d_64_png);   // assets/02d_64.png
+LV_IMG_DECLARE( ui_img_02n_64_png);   // assets/02n_64.png
+LV_IMG_DECLARE( ui_img_03d_64_png);   // assets/03d_64.png
+LV_IMG_DECLARE( ui_img_04d_64_png);   // assets/04d_64.png
+LV_IMG_DECLARE( ui_img_09d_64_png);   // assets/09d_64.png
+LV_IMG_DECLARE( ui_img_10d_64_png);   // assets/10d_64.png
+LV_IMG_DECLARE( ui_img_10n_64_png);   // assets/10n_64.png
+LV_IMG_DECLARE( ui_img_11d_64_png);   // assets/11d_64.png
+LV_IMG_DECLARE( ui_img_11n_64_png);   // assets/11n_64.png
+LV_IMG_DECLARE( ui_img_13d_64_png);   // assets/13d_64.png
+LV_IMG_DECLARE( ui_img_13n_64_png);   // assets/13n_64.png
+LV_IMG_DECLARE( ui_img_50d_64_png);   // assets/50d_64.png
 
 // FONTS
-LV_FONT_DECLARE(ui_font_DSEG7100);
-LV_FONT_DECLARE(ui_font_DSEG780);
-LV_FONT_DECLARE(ui_font_DSEG788);
-LV_FONT_DECLARE(ui_font_DSEG794);
-LV_FONT_DECLARE(ui_font_digital24);
-LV_FONT_DECLARE(ui_font_digital48);
-LV_FONT_DECLARE(ui_font_dsdigital120);
-LV_FONT_DECLARE(ui_font_dsdigital128);
-LV_FONT_DECLARE(ui_font_dsdigital48);
-LV_FONT_DECLARE(ui_font_dsdigital64);
-LV_FONT_DECLARE(ui_font_dsdigital72);
-LV_FONT_DECLARE(ui_font_dsdigital96);
-LV_FONT_DECLARE(ui_font_roboto24);
-LV_FONT_DECLARE(ui_font_roboto36);
-LV_FONT_DECLARE(ui_font_roboto42);
-LV_FONT_DECLARE(ui_font_roboto48);
-LV_FONT_DECLARE(ui_font_roboto64);
-LV_FONT_DECLARE(ui_font_dsdigital24);
-LV_FONT_DECLARE(ui_font_dsdigital32);
+LV_FONT_DECLARE( ui_font_DSEG7100);
+LV_FONT_DECLARE( ui_font_DSEG780);
+LV_FONT_DECLARE( ui_font_DSEG788);
+LV_FONT_DECLARE( ui_font_DSEG794);
+LV_FONT_DECLARE( ui_font_digital24);
+LV_FONT_DECLARE( ui_font_digital48);
+LV_FONT_DECLARE( ui_font_dsdigital120);
+LV_FONT_DECLARE( ui_font_dsdigital128);
+LV_FONT_DECLARE( ui_font_dsdigital24);
+LV_FONT_DECLARE( ui_font_dsdigital32);
+LV_FONT_DECLARE( ui_font_dsdigital48);
+LV_FONT_DECLARE( ui_font_dsdigital64);
+LV_FONT_DECLARE( ui_font_dsdigital72);
+LV_FONT_DECLARE( ui_font_dsdigital96);
+LV_FONT_DECLARE( ui_font_roboto24);
+LV_FONT_DECLARE( ui_font_roboto36);
+LV_FONT_DECLARE( ui_font_roboto42);
+LV_FONT_DECLARE( ui_font_roboto48);
+LV_FONT_DECLARE( ui_font_roboto64);
 
 // UI INIT
 void ui_init(void);
