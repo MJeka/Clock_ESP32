@@ -114,7 +114,7 @@ void setupOTA() {
   ArduinoOTA.setHostname(OTA_HOSTNAME);
 
   // 2. Установка пароля доступа (защита от несанкционированной прошивки)
-  // ArduinoOTA.setPassword(OTA_PASSWORD);
+  ArduinoOTA.setPassword(OTA_PASSWORD);
 
   // 3. Обработчик события: Начало процесса обновления
   ArduinoOTA.onStart([]() {

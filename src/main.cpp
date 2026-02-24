@@ -60,6 +60,7 @@ const char *months_ru[] = {"января",   "февраля", "марта",  "�
                            "сентября", "октября", "ноября", "декабря"};
 
 static lv_disp_draw_buf_t draw_buf;
+// reduce draw buffer height to save DRAM (was 30 rows)
 static lv_color_t buf[320 * 20];
 
 // =============================================================================
@@ -94,12 +95,12 @@ const WeatherIconMap weather_icons[] = {
     {"04n", &ui_img_04d_64_png}, // Пасмурно (ночь)
     {"09d", &ui_img_09d_64_png}, // Ливень (день)
     {"09n", &ui_img_09d_64_png}, // Ливень (ночь)
-    {"10d", &ui_img_10d_64_png}, // Дождь (день)
-    {"10n", &ui_img_10n_64_png}, // Дождь (ночь)
-    {"11d", &ui_img_11d_64_png}, // Гроза (день)
-    {"11n", &ui_img_11n_64_png}, // Гроза (ночь)
-    {"13d", &ui_img_13d_64_png}, // Снег (день)
-    {"13n", &ui_img_13n_64_png}, // Снег (ночь)
+    {"10d", &ui_img_10_64_png}, // Дождь (день)
+    {"10n", &ui_img_10_64_png}, // Дождь (ночь)
+    {"11d", &ui_img_11_64_png}, // Гроза (день)
+    {"11n", &ui_img_11_64_png}, // Гроза (ночь)
+    {"13d", &ui_img_13_64_png}, // Снег (день)
+    {"13n", &ui_img_13_64_png}, // Снег (ночь)
     {"50d", &ui_img_50d_64_png}, // Туман (день)
     {"50n", &ui_img_50d_64_png}   // Туман (ночь)
     // {"01d", &ui_img_1700430416}, // Ясно (день)
@@ -259,16 +260,10 @@ void update_ui_elements() {
         // Лог на английском
         logInfo("Date updated: %d.%02d", timeinfo.tm_mday, timeinfo.tm_mon + 1);
 
-        lv_label_set_text_fmt(ui_uiLabelDate1, "%d", timeinfo.tm_mday);
-        // lv_label_set_text(ui_uiLabelMonth1, months_ru[timeinfo.tm_mon]);
-
         strftime(buf_tmp, sizeof(buf_tmp), "%d.%m.%Y", &timeinfo);
-        lv_label_set_text(ui_uiLabelMonth1, buf_tmp);
+        lv_label_set_text(ui_uiLabelDate1, buf_tmp);
 
-        lv_label_set_text_fmt(ui_uiLabelYear1, "%d", 1900 + timeinfo.tm_year);
         lv_label_set_text(ui_uiLabelDay1, days_ru[timeinfo.tm_wday]);
-        // lv_label_set_text_fmt(ui_uiLabelDay1, "%s |",
-        // days_ru[timeinfo.tm_wday]);
 
         lv_obj_invalidate(lv_scr_act());
 

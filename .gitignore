@@ -5,3 +5,4 @@
 *.bak
 include/secrets.h
 backup/
+SquareLine/
