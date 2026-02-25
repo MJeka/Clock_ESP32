@@ -31,7 +31,7 @@ lv_obj_t *load_label = nullptr;
 // =============================================================================
 unsigned long lastUpdateTime = 0;
 unsigned long lastWeatherCheck = 0;
-const unsigned long weatherInterval = 30 * 60 * 1000;
+const unsigned long weatherInterval = 30 * 60 * 1000; // 30 мин * 60 сек * 1000 мс = 1 800 000 мс
 
 /**
  * @section DISPLAY_BRIGHTNESS_SETTINGS
