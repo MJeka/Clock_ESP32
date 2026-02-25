@@ -181,9 +181,10 @@ void update_weather_icon(const char *icon_id) {
 
 /**
  * @brief Запрос данных о погоде через OpenWeatherMap API и обновление
- * глобальных переменных
+ * глобальных переменных.
  */
 void fetch_weather() {
+  // Проверка статуса сетевого соединения перед выполнением HTTP-запроса
   if (WiFi.status() != WL_CONNECTED)
     return;
 
@@ -194,6 +195,8 @@ void fetch_weather() {
                "&units=metric&lang=ru";
 
   logInfo("Weather update request for %s", weather_city);
+  
+  http.setTimeout(5000); // Установка таймаута для предотвращения блокировки цикла
   http.begin(url);
 
   int httpCode = http.GET();
@@ -227,7 +230,7 @@ void fetch_weather() {
   } else {
     logInfo("Weather error: HTTP request failed, code: %d", httpCode);
   }
-  http.end();
+  http.end(); // Завершение сессии и освобождение ресурсов
 }
 
 // =============================================================================

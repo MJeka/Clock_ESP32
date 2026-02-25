@@ -146,9 +146,11 @@ String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
        "action='/save_settings' method='POST'>";
 
   s += "<label>Город (OpenWeatherMap)</label>";
-  s += "<input type='text' name='city' placeholder='Напр: Kharkiv (UA "
-       "добавится само)' value='" +
-       weatherCity + "'>";
+  s += "<input type='text' name='city' id='cityInput' list='citySuggestions' "
+       "placeholder='Напр: Kharkiv' autocomplete='off' "
+       "oninput='searchCity(this.value)' value='" + weatherCity + "'>";
+  // Контейнер для динамических подсказок
+  s += "<datalist id='citySuggestions'></datalist>";
 
   s += "<label>Яркость День (0-255)</label>";
   s += "<input type='number' name='d_br' min='0' max='255' value='" +
@@ -173,20 +175,48 @@ String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
 
   s += "</div>"; // Закрытие контейнера
 
-  // --- JAVASCRIPT ---
+// --- JAVASCRIPT ---
   s += "<script>";
-  s += "/** Переключение видимости пароля в поле ввода */";
+  
+  /** * @section PASSWORD_VISIBILITY
+   * Переключение видимости пароля в поле ввода 
+   */
   s += "function togglePass(){";
-  s += "  var x=document.getElementById('pass'); var "
-       "icon=document.getElementById('eye_icon');";
+  s += "  var x=document.getElementById('pass'); var icon=document.getElementById('eye_icon');";
   s += "  if(x.type==='password'){";
-  s += "    x.type='text'; icon.classList.remove('eye-closed'); "
-       "icon.classList.add('eye-open');";
+  s += "    x.type='text'; icon.classList.remove('eye-closed'); icon.classList.add('eye-open');";
   s += "  } else {";
-  s += "    x.type='password'; icon.classList.remove('eye-open'); "
-       "icon.classList.add('eye-closed');";
+  s += "    x.type='password'; icon.classList.remove('eye-open'); icon.classList.add('eye-closed');";
   s += "  }";
   s += "}";
+
+  /** * @section CITY_AUTOCOMPLETE
+   * Интеллектуальный поиск городов через API Nominatim (OpenStreetMap).
+   * Реализован Debounce-фильтр (600мс) для минимизации нагрузки на сеть.
+   */
+  s += "let debounceTimer;";
+  s += "function searchCity(query) {";
+  s += "  clearTimeout(debounceTimer);";
+  s += "  if (query.length < 3) return;";
+  s += "  debounceTimer = setTimeout(() => {";
+  s += "    fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=5&addressdetails=1')";
+  s += "      .then(response => response.json())";
+  s += "      .then(data => {";
+  s += "        const list = document.getElementById('citySuggestions');";
+  s += "        list.innerHTML = '';";
+  s += "        data.forEach(item => {";
+  s += "          const option = document.createElement('option');";
+  s += "          let cityName = item.address.city || item.address.town || item.address.village || item.display_name.split(',')[0];";
+  s += "          let countryCode = item.address.country_code ? item.address.country_code.toUpperCase() : '';";
+  s += "          option.value = countryCode ? (cityName + ',' + countryCode) : cityName;";
+  s += "          option.textContent = item.display_name;";
+  s += "          list.appendChild(option);";
+  s += "        });";
+  s += "      })";
+  s += "      .catch(err => console.error('City search error:', err));";
+  s += "  }, 600);";
+  s += "}";
+  
   s += "</script></body></html>";
 
   return s;

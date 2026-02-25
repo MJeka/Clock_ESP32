@@ -200,6 +200,10 @@ String scanNetworks() {
 // ОБРАБОТЧИКИ WEB-СЕРВЕРА
 // =============================================================================
 
+/**
+ * @brief Обработчик сохранения настроек через веб-интерфейс.
+ * Выполняет сохранение параметров в NVS и инициирует обновление состояния системы.
+ */
 void handleSaveSettings() {
   if (server.hasArg("d_br")) {
     String oldCity = String(weather_city);
@@ -216,28 +220,27 @@ void handleSaveSettings() {
     preferences.putInt("n_start", nightStartHour);
     preferences.putInt("n_end", nightEndHour);
 
-    // Настройка города (с автоподстановкой ,UA)
+    // Настройка города (с автоподстановкой ,UA или валидацией выбора из списка)
     if (server.hasArg("city")) {
       String newCity = server.arg("city");
       newCity.trim();
       if (newCity.length() > 0) {
         int commaIndex = newCity.indexOf(',');
         if (commaIndex == -1) {
-          // Запятой нет — добавляем ",UA" по умолчанию
+          // Запятой нет — добавление ",UA" по умолчанию
           newCity += ",UA";
         } else {
-          // Запятая есть — разделяем и проверяем код страны
+          // Запятая есть — разделение и проверка кода страны
           String cityPart = newCity.substring(0, commaIndex);
           String countryPart = newCity.substring(commaIndex + 1);
           cityPart.trim();
           countryPart.trim();
 
-          // Если после запятой не 2 символа — принудительно ставим "UA"
+          // Если после запятой не 2 символа — принудительная установка "UA"
           if (countryPart.length() != 2) {
             newCity = cityPart + ",UA";
           } else {
-            // Если ровно 2 — просто убираем лишние пробелы (напр. "Kharkiv, UA"
-            // -> "Kharkiv,UA")
+            // Удаление лишних пробелов для соответствия формату "City,CC"
             newCity = cityPart + "," + countryPart;
           }
         }
@@ -247,9 +250,9 @@ void handleSaveSettings() {
     }
 
     preferences.end();
-    check_brightness(); // Мгновенное обновление яркости после сохранения
+    check_brightness(); // Обновление яркости
 
-    // Если город изменился — сразу обновляем погоду
+    // Если город изменился — немедленный запрос новых метеоданных
     if (oldCity != String(weather_city)) {
       logInfo("City changed from %s to %s. Updating weather...",
               oldCity.c_str(), weather_city);
