@@ -150,6 +150,7 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area,
 
 /**
  * @brief Обновляет иконку в интерфейсе на основе кода от OpenWeatherMap.
+ * Если код не найден в справочнике, иконка скрывается.
  * @param icon_id Строка с кодом, полученная из JSON (например, "04n")
  */
 void update_weather_icon(const char *icon_id) {
@@ -157,8 +158,8 @@ void update_weather_icon(const char *icon_id) {
   if (icon_id == nullptr || ui_uiLabelWeather == nullptr)
     return;
 
-  // Резервная иконка (fallback), если пришедший код отсутствует в нашей таблице
-  const lv_img_dsc_t *target_img = &ui_img_02n_64_png;
+  // Изначально устанавливаем указатель в nullptr (вместо картинки по умолчанию)
+  const lv_img_dsc_t *target_img = nullptr;
 
   // Поиск соответствия в справочнике weather_icons
   for (int i = 0; i < weather_icons_count; i++) {
@@ -168,15 +169,27 @@ void update_weather_icon(const char *icon_id) {
     }
   }
 
-  // Установка нового источника изображения для объекта
-  lv_img_set_src(ui_uiLabelWeather, target_img);
+  // Проверка: нашли ли мы подходящую иконку
+  if (target_img != nullptr) {
+    // Если иконка найдена, устанавливаем источник и делаем объект видимым
+    lv_img_set_src(ui_uiLabelWeather, target_img);
+    lv_obj_clear_flag(ui_uiLabelWeather, LV_OBJ_FLAG_HIDDEN);
+    
+    // Логирование успешной установки
+    logInfo("UI_RENDER: Applied icon source for code: %s\n", icon_id);
+  } else {
+    // Если код не распознан, скрываем объект с экрана
+    lv_obj_add_flag(ui_uiLabelWeather, LV_OBJ_FLAG_HIDDEN);
+    
+    // Логирование отсутствия данных
+    logInfo("UI_RENDER: Icon code %s not found. Hiding object.\n", icon_id);
+  }
 
-  // Тонирование иконки в более теплый цвет
-  // lv_obj_set_style_img_recolor(ui_uiLabelWeather, lv_color_hex(0xFFA500), 0); // Оранжевый
-  // lv_obj_set_style_img_recolor_opa(ui_uiLabelWeather, 120, 0); // Легкое тонирование
-
-  // Логирование в Serial для верификации работы парсера
-  logInfo("UI_RENDER: Applied icon source for code: %s\n", icon_id);
+  // Тонирование иконки в более теплый цвет (закомментировано, так как требует наличия картинки)
+  // if (target_img != nullptr) {
+  //   lv_obj_set_style_img_recolor(ui_uiLabelWeather, lv_color_hex(0xFFA500), 0); // Оранжевый
+  //   lv_obj_set_style_img_recolor_opa(ui_uiLabelWeather, 120, 0); // Легкое тонирование
+  // }
 }
 
 /**
