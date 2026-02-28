@@ -103,118 +103,85 @@ const char WEB_STYLE[] PROGMEM = R"=====(
 
 /**
  * @brief Генерирует HTML-код главной страницы настроек.
- * * @param networks Список доступных WiFi сетей (HTML option tags).
- * @param savedSSID Текущее сохраненное имя сети.
- * @param dBr Яркость дисплея днем (0-255).
- * @param nBr Яркость дисплея ночью (0-255).
- * @param nStart Час начала ночного режима (0-23).
- * @param nEnd Час окончания ночного режима (0-23).
- * @return String Полный HTML документ.
  */
 String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
-                    int nStart, int nEnd, String weatherCity) {
+                    int nStart, int nEnd, String weatherCity, String citiesJson) {
   String s = "<html><head><meta charset='UTF-8'>";
-  // Установка favicon и viewport для мобильных устройств
-  s += "<link rel='icon' href='data:image/svg+xml,<svg "
-       "xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text "
-       "y=%22.9em%22 font-size=%2290%22>🕔</text></svg>'>";
-  s += "<meta name='viewport' content='width=device-width, initial-scale=1.0, "
-       "maximum-scale=1.0, user-scalable=no'>";
+  s += "<link rel='icon' href='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕔</text></svg>'>";
+  s += "<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>";
   s += String(WEB_STYLE);
   s += "</head><body>";
 
-  s += "<div class='container'>"; // Открытие основного контейнера
+  s += "<div class='container'>";
 
   // --- БЛОК НАСТРОЙКИ WIFI ---
-  s += "<div class='card'><h2>Настройка WiFi</h2><form action='/save' "
-       "method='POST'>";
+  s += "<div class='card'><h2>Настройка WiFi</h2><form action='/save' method='POST'>";
   s += "<label>Доступные сети</label>";
-  s += "<select name='ssid_select' id='ssid_select' "
-       "onchange='document.getElementById(\"custom_ssid\").value=this.value'>";
+  s += "<select name='ssid_select' id='ssid_select' onchange='document.getElementById(\"custom_ssid\").value=this.value'>";
   s += "<option value=''>-- Выберите сеть --</option>" + networks + "</select>";
-  s += "<input type='text' name='custom_ssid' id='custom_ssid' "
-       "placeholder='Имя сети (SSID)' value='" +
-       savedSSID + "'>";
-  s += "<div class='pass-wrapper'><input type='password' name='pass' id='pass' "
-       "placeholder='Пароль'>";
-  s += "<div id='eye_icon' class='eye-btn eye-closed' "
-       "onclick='togglePass()'></div></div>";
+  s += "<input type='text' name='custom_ssid' id='custom_ssid' placeholder='Имя сети (SSID)' value='" + savedSSID + "'>";
+  s += "<div class='pass-wrapper'><input type='password' name='pass' id='pass' placeholder='Пароль'>";
+  s += "<div id='eye_icon' class='eye-btn eye-closed' onclick='togglePass()'></div></div>";
   s += "<button type='submit'>СОХРАНИТЬ WIFI</button></form></div>";
 
   // --- БЛОК НАСТРОЕК ЭКРАНА И ПОГОДЫ ---
-  s += "<div class='card'><h2>Настройки устройства</h2><form "
-       "action='/save_settings' method='POST'>";
-
-  s += "<label>Город (OpenWeatherMap)</label>";
-  s += "<input type='text' name='city' id='cityInput' list='citySuggestions' "
-       "placeholder='Напр: Киев' autocomplete='off' "
-       "oninput='searchCity(this.value)' value='" + weatherCity + "'>";
-  // Контейнер для динамических подсказок
+  s += "<div class='card'><h2>Настройки устройства</h2><form action='/save_settings' method='POST'>";
+  s += "<label>Город (Поиск по локальной базе)</label>";
+  s += "<input type='text' name='city' id='cityInput' list='citySuggestions' placeholder='Напр: Київ' autocomplete='off' oninput='searchCity(this.value)' value='" + weatherCity + "'>";
   s += "<datalist id='citySuggestions'></datalist>";
 
   s += "<label>Яркость День (0-255)</label>";
-  s += "<input type='number' name='d_br' min='0' max='255' value='" +
-       String(dBr) + "'>";
-
+  s += "<input type='number' name='d_br' min='0' max='255' value='" + String(dBr) + "'>";
   s += "<label>Яркость Ночь (0-255)</label>";
-  s += "<input type='number' name='n_br' min='0' max='255' value='" +
-       String(nBr) + "'>";
-
+  s += "<input type='number' name='n_br' min='0' max='255' value='" + String(nBr) + "'>";
   s += "<label>Начало ночи (час, 0-23)</label>";
-  s += "<input type='number' name='n_st' min='0' max='23' value='" +
-       String(nStart) + "'>";
-
+  s += "<input type='number' name='n_st' min='0' max='23' value='" + String(nStart) + "'>";
   s += "<label>Конец ночи (час, 0-23)</label>";
-  s += "<input type='number' name='n_en' min='0' max='23' value='" +
-       String(nEnd) + "'>";
+  s += "<input type='number' name='n_en' min='0' max='23' value='" + String(nEnd) + "'>";
 
-  s += "<button type='submit' class='btn-save'>ОБНОВИТЬ "
-       "НАСТРОЙКИ</button></form>";
-  s += "<a href='/reset' class='reset-link' onclick='return confirm(\"Сбросить "
-       "все настройки?\")'>СБРОСИТЬ ВСЁ</a></div>";
+  s += "<button type='submit' class='btn-save'>ОБНОВИТЬ НАСТРОЙКИ</button></form>";
+  s += "<a href='/reset' class='reset-link' onclick='return confirm(\"Сбросить все настройки?\")'>СБРОСИТЬ ВСЁ</a></div>";
 
-  s += "</div>"; // Закрытие контейнера
+  s += "</div>";
 
 // --- JAVASCRIPT ---
   s += "<script>";
-  
-  /** * @section PASSWORD_VISIBILITY
-   * Переключение видимости пароля в поле ввода 
-   */
+  /* Загрузка локальной базы городов, переданной с ESP */
+  s += "const localCities = " + citiesJson + ";";
+
   s += "function togglePass(){";
   s += "  var x=document.getElementById('pass'); var icon=document.getElementById('eye_icon');";
-  s += "  if(x.type==='password'){";
-  s += "    x.type='text'; icon.classList.remove('eye-closed'); icon.classList.add('eye-open');";
-  s += "  } else {";
-  s += "    x.type='password'; icon.classList.remove('eye-open'); icon.classList.add('eye-closed');";
-  s += "  }";
+  s += "  if(x.type==='password'){ x.type='text'; icon.classList.remove('eye-closed'); icon.classList.add('eye-open'); }";
+  s += "  else { x.type='password'; icon.classList.remove('eye-open'); icon.classList.add('eye-closed'); }";
   s += "}";
 
-  /** * @section CITY_AUTOCOMPLETE
-   * Интеллектуальный поиск городов через API Nominatim (OpenStreetMap).
-   * Реализован Debounce-фильтр (600мс) для минимизации нагрузки на сеть.
+  /** * @section CITY_AUTOCOMPLETE_LOCAL
+   * Логика поиска по локальному массиву без использования внешних API.
+   * Выполняет поиск по RU, UA и EN названиям.
    */
-  s += "let debounceTimer;";
   s += "function searchCity(query) {";
-  s += "  clearTimeout(debounceTimer);";
-  s += "  if (query.length < 3) return;";
-  s += "  debounceTimer = setTimeout(() => {";
-  s += "    fetch('https://nominatim.openstreetmap.org/search?format=json&q=' + encodeURIComponent(query) + '&limit=5&addressdetails=1')";
-  s += "      .then(response => response.json())";
-  s += "      .then(data => {";
-  s += "        const list = document.getElementById('citySuggestions');";
-  s += "        list.innerHTML = '';";
-  s += "        data.forEach(item => {";
-  s += "          const option = document.createElement('option');";
-  s += "          let cityName = item.address.city || item.address.town || item.address.village || item.display_name.split(',')[0];";
-  s += "          let countryCode = item.address.country_code ? item.address.country_code.toUpperCase() : '';";
-  s += "          option.value = countryCode ? (cityName + ',' + countryCode) : cityName;";
-  s += "          option.textContent = item.display_name;";
-  s += "          list.appendChild(option);";
-  s += "        });";
-  s += "      })";
-  s += "      .catch(err => console.error('City search error:', err));";
-  s += "  }, 600);";
+  s += "  const list = document.getElementById('citySuggestions');";
+  s += "  list.innerHTML = '';";
+  s += "  if (query.length < 2) return;";
+  s += "  const q = query.toLowerCase();";
+  
+  /* Перебор локальной базы для поиска совпадений */
+  s += "  localCities.forEach(item => {";
+  s += "    if (item.ru.toLowerCase().includes(q) || item.ua.toLowerCase().includes(q) || item.en.toLowerCase().includes(q)) {";
+  s += "      const option = document.createElement('option');";
+  
+  /* Определение отображаемого имени на основе языка ввода */
+  s += "      let displayName = '';";
+  s += "      if (q.match(/[a-z]/i)) displayName = item.en;";
+  s += "      else if (item.ua.toLowerCase().includes(q)) displayName = item.ua;";
+  s += "      else displayName = item.ru;";
+  
+  /* Сохранение значения в формате 'Город,Страна' для ESP32 */
+  s += "      option.value = displayName + ',' + item.c;";
+  s += "      option.textContent = displayName + ' (UA)';";
+  s += "      list.appendChild(option);";
+  s += "    }";
+  s += "  });";
   s += "}";
   
   s += "</script></body></html>";

@@ -2,6 +2,7 @@
 #define WIFI_LOGIC_H
 
 #include "web_pages.h" // Шаблоны веб-интерфейса (HTML/CSS компоненты)
+#include "cities_db.h" // Локальная база городов Украины и мира (PROGMEM)
 #include <ArduinoOTA.h> // Протокол беспроводной прошивки (обновление кода через Wi-Fi без USB)
 #include <DNSServer.h> // DNS-сервер для Captive Portal (перенаправление на страницу настроек)
 #include <FS.h> // Абстрактный слой файловой системы (интерфейс доступа к Flash-памяти)
@@ -220,30 +221,15 @@ void handleSaveSettings() {
     preferences.putInt("n_start", nightStartHour);
     preferences.putInt("n_end", nightEndHour);
 
-    // Настройка города (с автоподстановкой ,UA или валидацией выбора из списка)
+    /**
+     * @section CITY_SAVE_LOGIC
+     * Сохранение выбранного города. Теперь данные приходят из локальной базы,
+     * поэтому дополнительная сложная валидация (проверка запятых) не требуется.
+     */
     if (server.hasArg("city")) {
       String newCity = server.arg("city");
       newCity.trim();
       if (newCity.length() > 0) {
-        int commaIndex = newCity.indexOf(',');
-        if (commaIndex == -1) {
-          // Запятой нет — добавление ",UA" по умолчанию
-          newCity += ",UA";
-        } else {
-          // Запятая есть — разделение и проверка кода страны
-          String cityPart = newCity.substring(0, commaIndex);
-          String countryPart = newCity.substring(commaIndex + 1);
-          cityPart.trim();
-          countryPart.trim();
-
-          // Если после запятой не 2 символа — принудительная установка "UA"
-          if (countryPart.length() != 2) {
-            newCity = cityPart + ",UA";
-          } else {
-            // Удаление лишних пробелов для соответствия формату "City,CC"
-            newCity = cityPart + "," + countryPart;
-          }
-        }
         strlcpy(weather_city, newCity.c_str(), sizeof(weather_city));
         preferences.putString("city", newCity);
       }
@@ -265,14 +251,25 @@ void handleSaveSettings() {
   }
 }
 
+/**
+ * @brief Инициализация веб-обработчиков.
+ * Настраивает маршруты для главной страницы, сохранения Wi-Fi и сброса настроек.
+ */
 void setupWebHandlers() {
+  /**
+   * @brief Главная страница настроек.
+   * Передает локальный JSON городов из PROGMEM для работы автодополнения.
+   */
   server.on("/", HTTP_GET, []() {
     server.send(200, "text/html",
                 getIndexPage(scanNetworks(), ssid, dayBrightness,
                              nightBrightness, nightStartHour, nightEndHour,
-                             String(weather_city)));
+                             String(weather_city), getCitiesJson()));
   });
 
+  /**
+   * @brief Сохранение учетных данных Wi-Fi.
+   */
   server.on("/save", HTTP_POST, []() {
     String s = server.arg("custom_ssid");
     if (s == "")
@@ -291,6 +288,9 @@ void setupWebHandlers() {
     }
   });
 
+  /**
+   * @brief Полный сброс настроек устройства.
+   */
   server.on("/reset", HTTP_GET, []() {
     preferences.begin("wifi-config", false);
     preferences.clear();
@@ -300,8 +300,14 @@ void setupWebHandlers() {
     ESP.restart();
   });
 
+  /**
+   * @brief Обработка настроек яркости и выбора города.
+   */
   server.on("/save_settings", HTTP_POST, handleSaveSettings);
 
+  /**
+   * @brief Перенаправление для Captive Portal.
+   */
   server.onNotFound([]() {
     server.sendHeader("Location", String("http://192.168.4.1"), true);
     server.send(302, "text/plain", "");
