@@ -14,21 +14,37 @@
 ```bash
 pio run
 ```
+или
+```bash
+platformio run
+```
 
 ### 2. Загрузка на плату (через USB)
 ```bash
 pio run --target upload
+```
+или
+```bash
+platformio run --target upload
 ```
 
 ### 3. Мониторинг порта (просмотр логов)
 ```bash
 pio device monitor
 ```
+или
+```bash
+platformio device monitor
+```
 *Для выхода из монитора нажмите `Ctrl + C` или `Ctrl + ]`.*
 
 ### 4. Сборка и загрузка одной командой
 ```bash
 pio run -t upload
+```
+или
+```bash
+platformio run -t upload
 ```
 
 ## Работа в VSCode (с расширением PlatformIO)

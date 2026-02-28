@@ -8,6 +8,14 @@
 #include <TFT_eSPI.h> // Графический драйвер нижнего уровня (инициализация и управление дисплеем)
 #include <WiFi.h> // Сетевой стек 802.11 (управление радиомодулем, режимы STA и AP)
 #include <lvgl.h> // Движок графического интерфейса пользователя (UI Engine)
+#include "cities_db.h" // Компактная база городов для автодополнения (хранится в Flash-памяти)
+
+
+// =============================================================================
+// ПРОТОТИПЫ ФУНКЦИЙ
+// =============================================================================
+void update_ui_elements(); 
+void update_weather_icon(const char *icon_code);
 
 // =============================================================================
 // ГЛОБАЛЬНЫЕ ОБЪЕКТЫ
@@ -31,7 +39,7 @@ lv_obj_t *load_label = nullptr;
 // =============================================================================
 unsigned long lastUpdateTime = 0;
 unsigned long lastWeatherCheck = 0;
-const unsigned long weatherInterval = 30 * 60 * 1000;
+const unsigned long weatherInterval = 30 * 60 * 1000; // 30 мин * 60 сек * 1000 мс = 1 800 000 мс
 
 /**
  * @section DISPLAY_BRIGHTNESS_SETTINGS
@@ -60,6 +68,7 @@ const char *months_ru[] = {"января",   "февраля", "марта",  "�
                            "сентября", "октября", "ноября", "декабря"};
 
 static lv_disp_draw_buf_t draw_buf;
+// reduce draw buffer height to save DRAM (was 30 rows)
 static lv_color_t buf[320 * 20];
 
 // =============================================================================
@@ -94,12 +103,12 @@ const WeatherIconMap weather_icons[] = {
     {"04n", &ui_img_04d_64_png}, // Пасмурно (ночь)
     {"09d", &ui_img_09d_64_png}, // Ливень (день)
     {"09n", &ui_img_09d_64_png}, // Ливень (ночь)
-    {"10d", &ui_img_10d_64_png}, // Дождь (день)
-    {"10n", &ui_img_10n_64_png}, // Дождь (ночь)
-    {"11d", &ui_img_11d_64_png}, // Гроза (день)
-    {"11n", &ui_img_11n_64_png}, // Гроза (ночь)
-    {"13d", &ui_img_13d_64_png}, // Снег (день)
-    {"13n", &ui_img_13n_64_png}, // Снег (ночь)
+    {"10d", &ui_img_10_64_png}, // Дождь (день)
+    {"10n", &ui_img_10_64_png}, // Дождь (ночь)
+    {"11d", &ui_img_11_64_png}, // Гроза (день)
+    {"11n", &ui_img_11_64_png}, // Гроза (ночь)
+    {"13d", &ui_img_13_64_png}, // Снег (день)
+    {"13n", &ui_img_13_64_png}, // Снег (ночь)
     {"50d", &ui_img_50d_64_png}, // Туман (день)
     {"50n", &ui_img_50d_64_png}   // Туман (ночь)
     // {"01d", &ui_img_1700430416}, // Ясно (день)
@@ -149,6 +158,7 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area,
 
 /**
  * @brief Обновляет иконку в интерфейсе на основе кода от OpenWeatherMap.
+ * Если код не найден в справочнике, иконка скрывается.
  * @param icon_id Строка с кодом, полученная из JSON (например, "04n")
  */
 void update_weather_icon(const char *icon_id) {
@@ -156,8 +166,8 @@ void update_weather_icon(const char *icon_id) {
   if (icon_id == nullptr || ui_uiLabelWeather == nullptr)
     return;
 
-  // Резервная иконка (fallback), если пришедший код отсутствует в нашей таблице
-  const lv_img_dsc_t *target_img = &ui_img_02n_64_png;
+  // Изначально устанавливаем указатель в nullptr (вместо картинки по умолчанию)
+  const lv_img_dsc_t *target_img = nullptr;
 
   // Поиск соответствия в справочнике weather_icons
   for (int i = 0; i < weather_icons_count; i++) {
@@ -167,22 +177,35 @@ void update_weather_icon(const char *icon_id) {
     }
   }
 
-  // Установка нового источника изображения для объекта
-  lv_img_set_src(ui_uiLabelWeather, target_img);
+  // Проверка: нашли ли мы подходящую иконку
+  if (target_img != nullptr) {
+    // Если иконка найдена, устанавливаем источник и делаем объект видимым
+    lv_img_set_src(ui_uiLabelWeather, target_img);
+    lv_obj_clear_flag(ui_uiLabelWeather, LV_OBJ_FLAG_HIDDEN);
+    
+    // Логирование успешной установки
+    logInfo("UI_RENDER: Applied icon source for code: %s\n", icon_id);
+  } else {
+    // Если код не распознан, скрываем объект с экрана
+    lv_obj_add_flag(ui_uiLabelWeather, LV_OBJ_FLAG_HIDDEN);
+    
+    // Логирование отсутствия данных
+    logInfo("UI_RENDER: Icon code %s not found. Hiding object.\n", icon_id);
+  }
 
-  // Тонирование иконки в более теплый цвет
-  // lv_obj_set_style_img_recolor(ui_uiLabelWeather, lv_color_hex(0xFFA500), 0); // Оранжевый
-  // lv_obj_set_style_img_recolor_opa(ui_uiLabelWeather, 120, 0); // Легкое тонирование
-
-  // Логирование в Serial для верификации работы парсера
-  logInfo("UI_RENDER: Applied icon source for code: %s\n", icon_id);
+  // Тонирование иконки в более теплый цвет (закомментировано, так как требует наличия картинки)
+  // if (target_img != nullptr) {
+  //   lv_obj_set_style_img_recolor(ui_uiLabelWeather, lv_color_hex(0xFFA500), 0); // Оранжевый
+  //   lv_obj_set_style_img_recolor_opa(ui_uiLabelWeather, 120, 0); // Легкое тонирование
+  // }
 }
 
 /**
  * @brief Запрос данных о погоде через OpenWeatherMap API и обновление
- * глобальных переменных
+ * глобальных переменных.
  */
 void fetch_weather() {
+  // Проверка статуса сетевого соединения перед выполнением HTTP-запроса
   if (WiFi.status() != WL_CONNECTED)
     return;
 
@@ -193,6 +216,8 @@ void fetch_weather() {
                "&units=metric&lang=ru";
 
   logInfo("Weather update request for %s", weather_city);
+  
+  http.setTimeout(5000); // Установка таймаута для предотвращения блокировки цикла
   http.begin(url);
 
   int httpCode = http.GET();
@@ -212,7 +237,7 @@ void fetch_weather() {
         const char *icon_code = doc["weather"][0]["icon"];
         if (icon_code) {
           update_weather_icon(icon_code);
-        }
+        } 
 
         logInfo("Weather updated: %.1f C, Hum: %d%%, Pres: %d mm, Icon: %s",
                 current_temp, current_humidity, current_pressure,
@@ -226,7 +251,7 @@ void fetch_weather() {
   } else {
     logInfo("Weather error: HTTP request failed, code: %d", httpCode);
   }
-  http.end();
+  http.end(); // Завершение сессии и освобождение ресурсов
 }
 
 // =============================================================================
@@ -259,16 +284,10 @@ void update_ui_elements() {
         // Лог на английском
         logInfo("Date updated: %d.%02d", timeinfo.tm_mday, timeinfo.tm_mon + 1);
 
-        lv_label_set_text_fmt(ui_uiLabelDate1, "%d", timeinfo.tm_mday);
-        // lv_label_set_text(ui_uiLabelMonth1, months_ru[timeinfo.tm_mon]);
-
         strftime(buf_tmp, sizeof(buf_tmp), "%d.%m.%Y", &timeinfo);
-        lv_label_set_text(ui_uiLabelMonth1, buf_tmp);
+        lv_label_set_text(ui_uiLabelDate1, buf_tmp);
 
-        lv_label_set_text_fmt(ui_uiLabelYear1, "%d", 1900 + timeinfo.tm_year);
         lv_label_set_text(ui_uiLabelDay1, days_ru[timeinfo.tm_wday]);
-        // lv_label_set_text_fmt(ui_uiLabelDay1, "%s |",
-        // days_ru[timeinfo.tm_wday]);
 
         lv_obj_invalidate(lv_scr_act());
 

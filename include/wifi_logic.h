@@ -2,6 +2,7 @@
 #define WIFI_LOGIC_H
 
 #include "web_pages.h" // Шаблоны веб-интерфейса (HTML/CSS компоненты)
+#include "cities_db.h" // Локальная база городов Украины и мира (PROGMEM)
 #include <ArduinoOTA.h> // Протокол беспроводной прошивки (обновление кода через Wi-Fi без USB)
 #include <DNSServer.h> // DNS-сервер для Captive Portal (перенаправление на страницу настроек)
 #include <FS.h> // Абстрактный слой файловой системы (интерфейс доступа к Flash-памяти)
@@ -69,15 +70,52 @@ void update_screen_status(const char *txt) {
 // =============================================================================
 
 /**
+ * @brief Активирует верхний графический слой ("занавес") для отображения системных процессов.
+ * Используется при загрузке и OTA-обновлении, чтобы перекрыть основной интерфейс.
+ */
+void show_ota_layer() {
+  lv_obj_t *top_layer = lv_layer_top();
+  
+  // Делаем слой видимым и непрозрачным
+  lv_obj_clear_flag(top_layer, LV_OBJ_FLAG_HIDDEN);
+  lv_obj_set_style_bg_opa(top_layer, LV_OPA_COVER, 0);
+  lv_obj_set_style_bg_color(top_layer, lv_color_hex(0x000000), 0);
+  
+  // Воссоздаем текстовую метку, если она была удалена после инициализации
+  if (load_label == nullptr) {
+    load_label = lv_label_create(top_layer);
+    lv_obj_set_style_text_color(load_label, lv_color_hex(0xFFFFFF), 0);
+    lv_obj_set_style_text_font(load_label, &ui_font_roboto24, 0);
+    lv_obj_set_style_text_align(load_label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_align(load_label, LV_ALIGN_CENTER, 0, 0);
+  }
+}
+
+/**
+ * @brief Обновляет текстовую информацию о прогрессе на верхнем слое.
+ * @param message Основное сообщение (статус)
+ * @param percent Процент выполнения (0-100)
+ */
+void update_ota_status(const char *message, int percent) {
+  if (load_label != nullptr) {
+    lv_label_set_text_fmt(load_label, "%s\n%d%%", message, percent);
+    lv_obj_invalidate(load_label); // Помечаем объект как требующий перерисовки
+  }
+  // Принудительный вызов обработчика для немедленного обновления экрана
+  lv_timer_handler();
+  lv_refr_now(NULL);  // Принудительно отрисовываем экран ПРЯМО СЕЙЧАС
+}
+
+/**
  * @brief Настраивает параметры и обработчики событий для прошивки через Wi-Fi.
+ * Обеспечивает визуализацию процесса на дисплее через верхний графический слой.
  */
 void setupOTA() {
-  // 1. Установка сетевого имени устройства (будет отображаться в списке портов
-  // IDE)
+  // 1. Установка сетевого имени устройства (будет отображаться в списке портов IDE)
   ArduinoOTA.setHostname(OTA_HOSTNAME);
 
   // 2. Установка пароля доступа (защита от несанкционированной прошивки)
-  // ArduinoOTA.setPassword(OTA_PASSWORD);
+  ArduinoOTA.setPassword(OTA_PASSWORD);
 
   // 3. Обработчик события: Начало процесса обновления
   ArduinoOTA.onStart([]() {
@@ -85,31 +123,44 @@ void setupOTA() {
     if (ArduinoOTA.getCommand() == U_FLASH)
       type = "sketch"; // Обновление программы (кода)
     else
-      type = "filesystem"; // Обновление файловой системы
+      type = "filesystem"; // Обновление файловой системы (SPIFFS/LittleFS)
+    
+    show_ota_layer(); // Активация черного экрана заставки
+    update_ota_status("Обновление...", 0);
     logInfo("OTA: Начало загрузки %s", type.c_str());
   });
 
   // 4. Обработчик события: Завершение прошивки
-  ArduinoOTA.onEnd([]() { logInfo("OTA: Обновление успешно завершено"); });
+  ArduinoOTA.onEnd([]() { 
+    update_ota_status("Готово!\nПерезагрузка", 100);
+    logInfo("OTA: Обновление успешно завершено"); 
+  });
 
-  // 5. Обработчик события: Визуализация прогресса (вывод % в Serial)
+  // 5. Обработчик события: Визуализация прогресса (вывод % на дисплей и в Serial)
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    Serial.printf("OTA Прогресс: %u%%\r", (progress / (total / 100)));
+    int percent = (progress / (total / 100));
+    update_ota_status("Обновление прошивки...", percent);
+    Serial.printf("OTA Прогресс: %u%%\r", percent);
   });
 
   // 6. Обработчик события: Возникновение критической ошибки
   ArduinoOTA.onError([](ota_error_t error) {
-    logInfo("OTA Ошибка [%u]", error);
-    if (error == OTA_AUTH_ERROR)
-      logInfo("Ошибка: Отказ в авторизации");
-    else if (error == OTA_BEGIN_ERROR)
-      logInfo("Ошибка: Сбой инициализации");
-    else if (error == OTA_CONNECT_ERROR)
-      logInfo("Ошибка: Сбой соединения");
-    else if (error == OTA_RECEIVE_ERROR)
-      logInfo("Ошибка: Ошибка приема данных");
-    else if (error == OTA_END_ERROR)
-      logInfo("Ошибка: Сбой завершения");
+    char err_buf[64];
+    const char* err_desc = "Ошибка";
+
+    if (error == OTA_AUTH_ERROR) err_desc = "Отказ в авторизации";
+    else if (error == OTA_BEGIN_ERROR) err_desc = "Сбой инициализации";
+    else if (error == OTA_CONNECT_ERROR) err_desc = "Сбой соединения";
+    else if (error == OTA_RECEIVE_ERROR) err_desc = "Ошибка приема данных";
+    else if (error == OTA_END_ERROR) err_desc = "Сбой завершения";
+
+    snprintf(err_buf, sizeof(err_buf), "OTA %s\n[%u]", err_desc, error);
+    update_ota_status(err_buf, 0);
+    logInfo("OTA: %s [%u]", err_desc, error);
+
+    // Пауза перед скрытием слоя ошибки, чтобы пользователь успел прочитать текст
+    delay(3000); 
+    lv_obj_add_flag(lv_layer_top(), LV_OBJ_FLAG_HIDDEN);
   });
 
   // 7. Запуск фоновой службы прослушивания порта OTA
@@ -150,6 +201,10 @@ String scanNetworks() {
 // ОБРАБОТЧИКИ WEB-СЕРВЕРА
 // =============================================================================
 
+/**
+ * @brief Обработчик сохранения настроек через веб-интерфейс.
+ * Выполняет сохранение параметров в NVS и инициирует обновление состояния системы.
+ */
 void handleSaveSettings() {
   if (server.hasArg("d_br")) {
     String oldCity = String(weather_city);
@@ -166,40 +221,24 @@ void handleSaveSettings() {
     preferences.putInt("n_start", nightStartHour);
     preferences.putInt("n_end", nightEndHour);
 
-    // Настройка города (с автоподстановкой ,UA)
+    /**
+     * @section CITY_SAVE_LOGIC
+     * Сохранение выбранного города. Теперь данные приходят из локальной базы,
+     * поэтому дополнительная сложная валидация (проверка запятых) не требуется.
+     */
     if (server.hasArg("city")) {
       String newCity = server.arg("city");
       newCity.trim();
       if (newCity.length() > 0) {
-        int commaIndex = newCity.indexOf(',');
-        if (commaIndex == -1) {
-          // Запятой нет — добавляем ",UA" по умолчанию
-          newCity += ",UA";
-        } else {
-          // Запятая есть — разделяем и проверяем код страны
-          String cityPart = newCity.substring(0, commaIndex);
-          String countryPart = newCity.substring(commaIndex + 1);
-          cityPart.trim();
-          countryPart.trim();
-
-          // Если после запятой не 2 символа — принудительно ставим "UA"
-          if (countryPart.length() != 2) {
-            newCity = cityPart + ",UA";
-          } else {
-            // Если ровно 2 — просто убираем лишние пробелы (напр. "Kharkiv, UA"
-            // -> "Kharkiv,UA")
-            newCity = cityPart + "," + countryPart;
-          }
-        }
         strlcpy(weather_city, newCity.c_str(), sizeof(weather_city));
         preferences.putString("city", newCity);
       }
     }
 
     preferences.end();
-    check_brightness(); // Мгновенное обновление яркости после сохранения
+    check_brightness(); // Обновление яркости
 
-    // Если город изменился — сразу обновляем погоду
+    // Если город изменился — немедленный запрос новых метеоданных
     if (oldCity != String(weather_city)) {
       logInfo("City changed from %s to %s. Updating weather...",
               oldCity.c_str(), weather_city);
@@ -212,14 +251,25 @@ void handleSaveSettings() {
   }
 }
 
+/**
+ * @brief Инициализация веб-обработчиков.
+ * Настраивает маршруты для главной страницы, сохранения Wi-Fi и сброса настроек.
+ */
 void setupWebHandlers() {
+  /**
+   * @brief Главная страница настроек.
+   * Передает локальный JSON городов из PROGMEM для работы автодополнения.
+   */
   server.on("/", HTTP_GET, []() {
     server.send(200, "text/html",
                 getIndexPage(scanNetworks(), ssid, dayBrightness,
                              nightBrightness, nightStartHour, nightEndHour,
-                             String(weather_city)));
+                             String(weather_city), getCitiesJson()));
   });
 
+  /**
+   * @brief Сохранение учетных данных Wi-Fi.
+   */
   server.on("/save", HTTP_POST, []() {
     String s = server.arg("custom_ssid");
     if (s == "")
@@ -238,6 +288,9 @@ void setupWebHandlers() {
     }
   });
 
+  /**
+   * @brief Полный сброс настроек устройства.
+   */
   server.on("/reset", HTTP_GET, []() {
     preferences.begin("wifi-config", false);
     preferences.clear();
@@ -247,8 +300,14 @@ void setupWebHandlers() {
     ESP.restart();
   });
 
+  /**
+   * @brief Обработка настроек яркости и выбора города.
+   */
   server.on("/save_settings", HTTP_POST, handleSaveSettings);
 
+  /**
+   * @brief Перенаправление для Captive Portal.
+   */
   server.onNotFound([]() {
     server.sendHeader("Location", String("http://192.168.4.1"), true);
     server.send(302, "text/plain", "");
