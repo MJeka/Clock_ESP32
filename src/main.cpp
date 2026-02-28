@@ -8,6 +8,14 @@
 #include <TFT_eSPI.h> // Графический драйвер нижнего уровня (инициализация и управление дисплеем)
 #include <WiFi.h> // Сетевой стек 802.11 (управление радиомодулем, режимы STA и AP)
 #include <lvgl.h> // Движок графического интерфейса пользователя (UI Engine)
+#include "cities_db.h" // Компактная база городов для автодополнения (хранится в Flash-памяти)
+
+
+// =============================================================================
+// ПРОТОТИПЫ ФУНКЦИЙ
+// =============================================================================
+void update_ui_elements(); 
+void update_weather_icon(const char *icon_code);
 
 // =============================================================================
 // ГЛОБАЛЬНЫЕ ОБЪЕКТЫ
@@ -194,9 +202,10 @@ void update_weather_icon(const char *icon_id) {
 
 /**
  * @brief Запрос данных о погоде через OpenWeatherMap API и обновление
- * глобальных переменных
+ * глобальных переменных.
  */
 void fetch_weather() {
+  // Проверка статуса сетевого соединения перед выполнением HTTP-запроса
   if (WiFi.status() != WL_CONNECTED)
     return;
 
@@ -207,6 +216,8 @@ void fetch_weather() {
                "&units=metric&lang=ru";
 
   logInfo("Weather update request for %s", weather_city);
+  
+  http.setTimeout(5000); // Установка таймаута для предотвращения блокировки цикла
   http.begin(url);
 
   int httpCode = http.GET();
@@ -226,7 +237,7 @@ void fetch_weather() {
         const char *icon_code = doc["weather"][0]["icon"];
         if (icon_code) {
           update_weather_icon(icon_code);
-        }
+        } 
 
         logInfo("Weather updated: %.1f C, Hum: %d%%, Pres: %d mm, Icon: %s",
                 current_temp, current_humidity, current_pressure,
@@ -240,7 +251,7 @@ void fetch_weather() {
   } else {
     logInfo("Weather error: HTTP request failed, code: %d", httpCode);
   }
-  http.end();
+  http.end(); // Завершение сессии и освобождение ресурсов
 }
 
 // =============================================================================
