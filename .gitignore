@@ -5,3 +5,5 @@
 *.bak
 include/secrets.h
 backup/
+SquareLine/
+firmware.bin
