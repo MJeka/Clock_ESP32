@@ -10,6 +10,12 @@
 #include <lvgl.h> // Движок графического интерфейса пользователя (UI Engine)
 
 // =============================================================================
+// ПРОТОТИПЫ ФУНКЦИЙ
+// =============================================================================
+void update_ui_elements(); 
+void update_weather_icon(const char *icon_code);
+
+// =============================================================================
 // ГЛОБАЛЬНЫЕ ОБЪЕКТЫ
 // =============================================================================
 TFT_eSPI tft = TFT_eSPI();
@@ -229,7 +235,7 @@ void fetch_weather() {
         const char *icon_code = doc["weather"][0]["icon"];
         if (icon_code) {
           update_weather_icon(icon_code);
-        }
+        } 
 
         logInfo("Weather updated: %.1f C, Hum: %d%%, Pres: %d mm, Icon: %s",
                 current_temp, current_humidity, current_pressure,

@@ -147,7 +147,7 @@ String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
 
   s += "<label>Город (OpenWeatherMap)</label>";
   s += "<input type='text' name='city' id='cityInput' list='citySuggestions' "
-       "placeholder='Напр: Kharkiv' autocomplete='off' "
+       "placeholder='Напр: Киев' autocomplete='off' "
        "oninput='searchCity(this.value)' value='" + weatherCity + "'>";
   // Контейнер для динамических подсказок
   s += "<datalist id='citySuggestions'></datalist>";
