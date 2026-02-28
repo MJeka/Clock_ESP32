@@ -4,8 +4,12 @@
 #include <Arduino.h>
 
 /**
- * @brief Полностью локальная база городов (Flash-память).
- * Формат: "RU|UA|EN|КодСтраны"
+ * @brief Локальная база городов.
+ * Использование модификаторов 'const char* const' совместно с макросом 'PROGMEM' 
+ * гарантирует размещение массива указателей и самих строковых литералов в 
+ * Flash-памяти программ. Это исключает нецелевой расход SRAM при хранении 
+ * статических данных.
+ * Формат записи: "RU|UA|EN|CountryCode"
  */
 const char* const CITIES_DATABASE[] PROGMEM = {
     "Киев|Київ|Kyiv|UA",
@@ -17,23 +21,25 @@ const char* const CITIES_DATABASE[] PROGMEM = {
     "Львов|Львів|Lviv|UA",
     "Кривой Рог|Кривий Ріг|Kryvyi Rih|UA",
     "Николаев|Миколаїв|Mykolaiv|UA",
-    "Севастополь|Севастополь|Sevastopol|UA",
     "Мариуполь|Маріуполь|Mariupol|UA",
     "Луганск|Луганськ|Luhansk|UA",
+    "Севастополь|Севастополь|Sevastopol|UA",
     "Винница|Вінниця|Vinnytsia|UA",
     "Симферополь|Сімферополь|Simferopol|UA",
     "Херсон|Херсон|Kherson|UA",
     "Полтава|Полтава|Poltava|UA",
     "Чернигов|Чернігів|Chernihiv|UA",
     "Черкассы|Черкаси|Cherkasy|UA",
-    "Житомир|Житомир|Zhytomyr|UA",
-    "Сумы|Суми|Sumy|UA",
     "Хмельницкий|Хмельницький|Khmelnytskyi|UA",
+    "Житомир|Житомир|Zhytomyr|UA",
     "Черновцы|Чернівці|Chernivtsi|UA",
+    "Сумы|Суми|Sumy|UA",
     "Ровно|Рівне|Rivne|UA",
     "Ивано-Франковск|Івано-Франківськ|Ivano-Frankivsk|UA",
-    "Кременчуг|Кременчук|Kremenchuk|UA",
+    "Каменское|Кам'янське|Kamianske|UA",
+    "Кропивницкий|Кропивницький|Kropyvnytskyi|UA",
     "Тернополь|Тернопіль|Ternopil|UA",
+    "Кременчуг|Кременчук|Kremenchuk|UA",
     "Луцк|Луцьк|Lutsk|UA",
     "Белая Церковь|Біла Церква|Bila Tserkva|UA",
     "Краматорск|Краматорськ|Kramatorsk|UA",
@@ -43,43 +49,65 @@ const char* const CITIES_DATABASE[] PROGMEM = {
     "Бердянск|Бердянськ|Berdiansk|UA",
     "Никополь|Нікополь|Nikopol|UA",
     "Славянск|Слов'янськ|Sloviansk|UA",
-    "Евпатория|Євпаторія|Yevpatoriia|UA",
+    "Евпатория|Євпаторія|Evpatoria|UA",
     "Алчевск|Алчевськ|Alchevsk|UA",
     "Павлоград|Павлоград|Pavlohrad|UA",
-    "Северодонецк|Сєвєродонецьк|Severodonetsk|UA",
-    "Ялта|Ялта|Yalta|UA",
+    "Северодонецк|Сєвєродонецьк|Sievierodonetsk|UA",
     "Лисичанск|Лисичанськ|Lysychansk|UA",
-    "Феодосия|Феодосія|Feodosiia|UA",
-    "Горловка|Горлівка|Horlivka|UA",
-    "Макеевка|Макіївка|Makiivka|UA",
-    "Бахчисарай|Бахчисарай|Bakhchysarai|UA",
-    "Джанкой|Джанкой|Dzhankoi|UA"
+    "Мукачево|Мукачево|Mukachevo|UA",
+    "Конотоп|Конотоп|Konotop|UA",
+    "Умань|Умань|Uman|UA",
+    "Ялта|Ялта|Yalta|UA",
+    "Александрия|Олександрія|Oleksandriia|UA",
+    "Енакиево|Єнакієве|Yenakiieve|UA",
+    "Шостка|Шостка|Shostka|UA",
+    "Бердичев|Бердичів|Berdychiv|UA",
+    "Бахмут|Бахмут|Bakhmut|UA",
+    "Каменец-Подольский|Кам'янець-Подільський|Kamianets-Podilskyi|UA",
+    "Константиновка|Костянтинівка|Kostiantynivka|UA",
+    "Ковель|Ковель|Kovel|UA",
+    "Феодосия|Феодосія|Feodosia|UA",
+    "Горловка|Горлівка|Horlivka|UA"
 };
 
-const int CITIES_COUNT = sizeof(CITIES_DATABASE) / sizeof(CITIES_DATABASE[0]);
-
 /**
- * @brief Сборка JSON-строки из PROGMEM для отправки клиенту.
+ * @brief Генерирует JSON-строку на основе данных из Flash-памяти.
+ * Функция выполняет итерацию по массиву в PROGMEM, десериализует упакованные 
+ * строки и формирует массив объектов для фронтенд-части веб-интерфейса.
+ * @return String Результирующий JSON-массив.
  */
 String getCitiesJson() {
     String json = "[";
-    for (int i = 0; i < CITIES_COUNT; i++) {
-        char buffer[128];
-        strcpy_P(buffer, (char*)pgm_read_ptr(&(CITIES_DATABASE[i])));
-        String s = String(buffer);
+    
+    // Определение количества элементов через размер структуры массива
+    int count = sizeof(CITIES_DATABASE) / sizeof(CITIES_DATABASE[0]);
+    
+    for (int i = 0; i < count; i++) {
+        // Извлечение указателя на строку из адресного пространства PROGMEM
+        char* ptr = (char*)pgm_read_ptr(&(CITIES_DATABASE[i]));
         
-        int p1 = s.indexOf('|');
-        int p2 = s.indexOf('|', p1 + 1);
-        int p3 = s.lastIndexOf('|');
+        // Буферизация данных во временную переменную SRAM для обработки
+        char buffer[128];
+        strcpy_P(buffer, ptr);
+        
+        // Сегментация строки по разделителю пайп '|'
+        char *ru = strtok(buffer, "|");
+        char *ua = strtok(NULL, "|");
+        char *en = strtok(NULL, "|");
+        char *c  = strtok(NULL, "|");
 
-        json += "{\"ru\":\"" + s.substring(0, p1) + "\",";
-        json += "\"ua\":\"" + s.substring(p1 + 1, p2) + "\",";
-        json += "\"en\":\"" + s.substring(p2 + 1, p3) + "\",";
-        json += "\"c\":\"" + s.substring(p3 + 1) + "\"}";
-        if (i < CITIES_COUNT - 1) json += ",";
+        // Построение структуры JSON-объекта
+        json += "{\"ru\":\"" + String(ru) + "\",";
+        json += "\"ua\":\"" + String(ua) + "\",";
+        json += "\"en\":\"" + String(en) + "\",";
+        json += "\"c\":\"" + String(c) + "\"}";
+        
+        // Добавление разделителя элементов массива при наличии последующих записей
+        if (i < count - 1) json += ",";
     }
+    
     json += "]";
     return json;
 }
 
-#endif
+#endif // CITIES_DB_H

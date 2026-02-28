@@ -156,8 +156,7 @@ String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
   s += "}";
 
   /** * @section CITY_AUTOCOMPLETE_LOCAL
-   * Логика поиска по локальному массиву без использования внешних API.
-   * Выполняет поиск по RU, UA и EN названиям.
+   * Исправленная логика поиска: проверяет совпадения по всем языкам (RU, UA, EN) одновременно.
    */
   s += "function searchCity(query) {";
   s += "  const list = document.getElementById('citySuggestions');";
@@ -165,18 +164,22 @@ String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
   s += "  if (query.length < 2) return;";
   s += "  const q = query.toLowerCase();";
   
-  /* Перебор локальной базы для поиска совпадений */
   s += "  localCities.forEach(item => {";
-  s += "    if (item.ru.toLowerCase().includes(q) || item.ua.toLowerCase().includes(q) || item.en.toLowerCase().includes(q)) {";
+  /* Проверка вхождения строки во все языковые поля */
+  s += "    const matchRu = item.ru.toLowerCase().includes(q);";
+  s += "    const matchUa = item.ua.toLowerCase().includes(q);";
+  s += "    const matchEn = item.en.toLowerCase().includes(q);";
+  
+  s += "    if (matchRu || matchUa || matchEn) {";
   s += "      const option = document.createElement('option');";
   
-  /* Определение отображаемого имени на основе языка ввода */
+  /* Выбор отображаемого имени: если введена латиница - берем EN, если кириллица - приоритет UA/RU */
   s += "      let displayName = '';";
-  s += "      if (q.match(/[a-z]/i)) displayName = item.en;";
-  s += "      else if (item.ua.toLowerCase().includes(q)) displayName = item.ua;";
-  s += "      else displayName = item.ru;";
+  s += "      if (/[a-z]/i.test(q)) { displayName = item.en; }";
+  s += "      else if (matchUa) { displayName = item.ua; }";
+  s += "      else { displayName = item.ru; }";
   
-  /* Сохранение значения в формате 'Город,Страна' для ESP32 */
+  /* Сохранение значения в формате 'Имя,Страна' и отображение в списке */
   s += "      option.value = displayName + ',' + item.c;";
   s += "      option.textContent = displayName + ' (UA)';";
   s += "      list.appendChild(option);";
