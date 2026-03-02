@@ -447,8 +447,19 @@ void setup() {
 
   // РАЗВИЛКА: Успех или Режим точки доступа
   if (WiFi.status() == WL_CONNECTED) {
-    update_screen_status("Сеть подключена!");
-    delay(500);
+
+    // Буфер для формирования сообщения
+    char msg[64];
+    
+    // Получаем IP адрес
+    IPAddress ip = WiFi.localIP();
+
+    snprintf(msg, sizeof(msg), "Сеть подключена!\nIP: %s", ip.toString().c_str());
+    logInfo("IP - %s", ip.toString().c_str());
+    update_screen_status(msg);
+
+    // update_screen_status("Сеть подключена!");
+    delay(1000);
 
     // Инициализация службы обновления по воздуху
     setupOTA();
@@ -456,7 +467,10 @@ void setup() {
     server.begin();
     setupWebHandlers();
 
-    update_screen_status("Синхронизация времени...");
+    // update_screen_status("Синхронизация времени...");
+    snprintf(msg, sizeof(msg), "Синхронизация времени...\nIP: %s", ip.toString().c_str());
+    update_screen_status(msg);
+
     configTzTime(TZ_INFO, ntpServer, ntpServer2);
 
     int ntp_retry = 0;
@@ -467,17 +481,21 @@ void setup() {
       delay(500);
       ntp_retry++;
     }
-    delay(500);
+    delay(1000);
 
-    update_screen_status("Обновление погоды...");
+    // update_screen_status("Обновление погоды...");
+    snprintf(msg, sizeof(msg), "Обновление погоды...\nIP: %s", ip.toString().c_str());
+    update_screen_status(msg);
     fetch_weather();
-    delay(500);
+    delay(1000);
 
     // Заполняем интерфейс данными перед открытием
     update_ui_elements();
 
-    update_screen_status("Система готова!");
-    delay(1000);
+    // update_screen_status("Система готова!");
+    snprintf(msg, sizeof(msg), "Система готова!\nIP: %s", ip.toString().c_str());
+    update_screen_status(msg);
+    delay(2000);
 
     // --- КРИТИЧЕСКИЙ БЛОК ОЧИСТКИ ЗАСТАВКИ ---
 
@@ -502,7 +520,7 @@ void setup() {
     // Если WiFi не найден — уходим в режим настройки
     update_screen_status("Ошибка WiFi!\nРежим настройки...");
     WiFi.disconnect(true);
-    delay(1500);
+    delay(2000);
 
     generateAPName();
     setupWebHandlers();
