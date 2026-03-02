@@ -1,78 +1,124 @@
-# Clock ESP32 Project
+# 🕒 Smart Clock ESP32
 
-Проект перенесен из Arduino IDE в PlatformIO. Основной код (`main.cpp`) полностью оригинальный и поддерживает функции Arduino Core 3.0 (например, `ledcAttach`).
+<p align="center">
+  <img src="images/preview.png" alt="Smart Clock Preview" width="600">
+</p>
 
-## Требования
-- **Python 3.11** (уже установлен в системе через brew).
-- **PlatformIO Core**.
+[![PlatformIO](https://img.shields.io/badge/PlatformIO-Compatible-orange.svg)](https://platformio.org/)
+[![Framework](https://img.shields.io/badge/Framework-Arduino-blue.svg)](https://www.arduino.cc/)
+[![ESP32](https://img.shields.io/badge/Hardware-ESP32-lightgrey.svg)](https://www.espressif.com/en/products/socs/esp32)
 
-## Основные команды (CLI)
+Профессиональное решение для умных часов на базе **ESP32**, **LVGL 8.3** и дисплея **ST7789**. Проект объединяет современный графический интерфейс, синхронизацию времени по NTP, прогноз погоды и удобную настройку через веб-интерфейс.
 
-Выполняйте эти команды, находясь в корневой папке проекта:
+---
 
-### 1. Компиляция (Сборка)
+## ✨ Основные возможности
+
+- 🖥️ **Графический интерфейс**: Построен на библиотеке **LVGL 8.3** (дизайн SquareLine Studio).
+- ☁️ **Погода**: Получение данных (температура, влажность, давление, иконки) через **OpenWeatherMap API**.
+- ⏰ **Точное время**: Синхронизация по **NTP** с автоматическим учетом временных зон.
+- 🌓 **Ночной режим**: Автоматическое управление яркостью подсветки (ШИМ) по расписанию.
+- 🌐 **Web-интерфейс**: Настройка WiFi, города и параметров яркости без перепрошивки.
+- 🛜 **Captive Portal**: Режим точки доступа (AP) для начальной настройки при отсутствии сети.
+- 📲 **OTA**: Беспроводное обновление прошивки по Wi-Fi.
+
+---
+
+## 🛠️ Требования
+
+- **IDE**: [VSCode](https://code.visualstudio.com/) с расширением [PlatformIO](https://platformio.org/install/ide?install=vscode).
+- **Core**: Python 3.11+.
+- **Hardware**: ESP32 (DevKit v1), Дисплей ST7789 (240x320), Тачскрин XPT2046.
+
+---
+
+## 🚀 Быстрый старт
+
+### 1. Подготовка конфигурации
+Переименуйте `include/secrets.h.example` в `include/secrets.h` и заполните ваши данные:
+```cpp
+const char* weatherApiKey = "ВАШ_КЛЮЧ_ОТ_OPENWEATHER";
+const char* city = "Kyiv";
+```
+
+### 2. Сборка и прошивка
+Используйте иконки в нижней панели VSCode:
+- ✔️ **Build** (Сборка)
+- ➡️ **Upload** (Загрузка)
+- 🔌 **Serial Monitor** (Логи)
+
+Или через CLI:
 ```bash
-pio run
-```
-или
-```bash
-platformio run
+pio run -t upload && pio device monitor
 ```
 
-### 2. Загрузка на плату (через USB)
-```bash
-pio run --target upload
-```
-или
-```bash
-platformio run --target upload
-```
+---
 
-### 3. Мониторинг порта (просмотр логов)
-```bash
-pio device monitor
-```
-или
-```bash
-platformio device monitor
-```
-*Для выхода из монитора нажмите `Ctrl + C` или `Ctrl + ]`.*
+## 🔌 Подключение оборудования
 
-### 4. Сборка и загрузка одной командой
-```bash
-pio run -t upload
-```
-или
-```bash
-platformio run -t upload
-```
+### 1. Дисплей (ST7789)
+| Пин дисплея | Пин ESP32 | Описание |
+| :--- | :--- | :--- |
+| **VCC** | 3.3V | Питание |
+| **GND** | GND | Земля |
+| **SCL (SCLK)** | 18 | SPI Clock |
+| **SDA (MOSI)** | 23 | SPI Data |
+| **RES (RST)** | 33 | Reset |
+| **DC** | 27 | Data / Command |
+| **CS** | 5 | Chip Select |
+| **BLK (BL)** | 22 | Подсветка (PWM) |
 
-## Работа в VSCode (с расширением PlatformIO)
-1. **Собрать**: Нажмите иконку ![](https://raw.githubusercontent.com/platformio/platformio-vscode-ide/develop/assets/images/build-icon.png) (галочка) в нижней панели.
-2. **Загрузить**: Нажмите иконку ![](https://raw.githubusercontent.com/platformio/platformio-vscode-ide/develop/assets/images/upload-icon.png) (стрелочка вправо) в нижней панели.
-3. **Монитор**: Нажмите иконку ![](https://raw.githubusercontent.com/platformio/platformio-vscode-ide/develop/assets/images/monitor-icon.png) (вилка/розетка) для просмотра `Serial.print`.
+### 2. Тачскрин (XPT2046)
+| Пин тача | Пин ESP32 | Описание |
+| :--- | :--- | :--- |
+| **TSCK** | 12 | SPI Clock |
+| **TMISO** | 13 | SPI MISO |
+| **TMOSI** | 15 | SPI MOSI |
+| **TCS** | 14 | Chip Select |
+| **EN** | 3.3V | Питание Touch |
 
-## Обновление по воздуху (OTA)
+> [!NOTE]
+> Все настройки пинов и частот SPI находятся в файле `platformio.ini` в блоке `build_flags`.
 
-Проект поддерживает беспроводную прошивку через Wi-Fi.
+---
 
-### 1. Подготовка
-Убедитесь, что ваш компьютер и ESP32 находятся в одной Wi-Fi сети.
+## ⚙️ Конфигурация
 
-### 2. Загрузка через терминал
-Вы можете запустить загрузку, указав IP-адрес устройства или его сетевое имя (из `secrets.h`):
-```bash
-pio run -t upload --upload-port Clock-ESP32.local
-```
-Если запросит пароль (хотя в коде он может быть закомментирован), используйте тот, что указан в `secrets.h`.
+### Файл `secrets.h`
+| Переменная | Описание |
+| :--- | :--- |
+| `weatherApiKey` | Ключ API OpenWeatherMap. |
+| `city` | Город по умолчанию. |
+| `TZ_INFO` | POSIX-строка временной зоны (Киев: `EET-2EEST,M3.5.0/3,M10.5.0/4`). |
+| `ntpServer` | Сервер времени (например, `time.google.com`). |
+| `OTA_HOSTNAME` | Сетевое имя устройства (`Clock-ESP32.local`). |
 
-### 3. Настройка в platformio.ini (постоянная)
-Чтобы загрузка по нажатию кнопки в VSCode всегда шла через OTA, добавьте эти строки в `platformio.ini`:
-```ini
-upload_protocol = espota
-upload_port = Clock-ESP32.local
-; upload_flags = --auth=jeka  ; Раскомментируйте, если пароль включен в коде
-```
+### Файл `cities_db.h` (База городов)
+Хранит список для автодополнения в формате: `"RU|UA|EN|Code"`.
+Пример: `"Львов|Львів|Lviv|UA"`. Использует `PROGMEM` для экономии SRAM.
 
-## Настройка дисплея и железа
-Все параметры дисплея (ST7789, пины подключения, частота) вынесены в `platformio.ini` в разделе `build_flags`. Если нужно изменить пины, делайте это там, чтобы не менять код.
+---
+
+## 📡 Веб-интерфейс и OTA
+
+1. **Режим настройки**: Если часы не могут найти WiFi, они создают точку доступа `Clock-Setup-XXXX`. Подключитесь к ней, и откроется страница настройки.
+2. **Обновление по воздуху (OTA)**:
+   Чтобы прошить удаленно, раскомментируйте строки в `platformio.ini`:
+   ```ini
+   upload_protocol = espota
+   upload_port = Clock-ESP32.local
+   ```
+
+---
+
+## 📂 Структура проекта
+
+- `src/main.cpp` — ядро системы, логика WiFi, OTA и инициализация LVGL.
+- `include/` — заголовочные файлы и конфигурация.
+- `lib/ui/` — компоненты интерфейса (экспорт из SquareLine Studio).
+- `platformio.ini` — глобальные настройки проекта и драйвера дисплея.
+
+---
+
+> [!IMPORTANT]
+> Проект поддерживает **Arduino Core 3.0**. Библиотека `TFT_eSPI` и `LVGL` уже настроены для работы "из коробки" через флаги компиляции.
