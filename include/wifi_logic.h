@@ -212,34 +212,25 @@ String buildNetworkList(int n) {
  * Исключает блокировку основного цикла (loop).
  */
 String getCachedNetworks() {
-  /**
-   * Получаем состояние асинхронного сканера.
-   * Статус -2 означает, что результаты отсутствуют или удалены.
-   * Статус -1 означает, что процесс сканирования еще активен.
-   */
+  // Проверяем текущий статус сканера
   int n = WiFi.scanComplete(); 
 
   if (n == -2) {
     /**
-     * Если кэш пуст, инициируем фоновое сканирование.
-     * Параметр 'true' указывает на асинхронное выполнение.
+     * Сканирование еще не инициировано. Запускаем в фоновом режиме (async = true).
+     * Это не остановит выполнение кода и часов.
      */
     WiFi.scanNetworks(true); 
-    return "<option value=''>Сканирование начато...</option>";
+    return "<option>Сканирование начато...</option>";
   }
   
   if (n == -1) {
-    /**
-     * Возвращаем временную заглушку на период работы радиомодуля.
-     */
-    return "<option value=''>Поиск сетей (подождите)...</option>";
+    // Сканирование в процессе выполнения
+    return "<option>Поиск сетей (подождите)...</option>";
   }
 
-  /**
-   * Сборка итогового списка. 
-   * Мы намеренно НЕ вызываем WiFi.scanDelete(), чтобы сохранить данные в кэше
-   * для последующих запросов до тех пор, пока пользователь не инициирует обновление вручную.
-   */
+  // Если n >= 0, значит данные в кэше готовы. Мы их отдаем, но НЕ удаляем,
+  // чтобы список был доступен до ручного запроса на обновление.
   return buildNetworkList(n);
 }
 
@@ -325,20 +316,13 @@ void setupWebHandlers() {
   });
 
   /**
-   * @brief Эндпоинт для AJAX-запроса обновления списка сетей.
-   * Принудительно очищает кэш и запускает новый цикл сканирования.
+   * @brief Инициирует принудительное пересканирование сетей.
+   * Очищает кэш и запускает новый фоновый поиск.
    */
-  server.on("/scan", HTTP_GET, []() {
-    WiFi.scanDelete();
-    WiFi.scanNetworks(true);
+  server.on("/scan_trigger", HTTP_GET, []() {
+    WiFi.scanDelete();        // Удаление старого результата
+    WiFi.scanNetworks(true);  // Запуск нового асинхронного поиска
     server.send(200, "text/plain", "OK");
-  });
-
-  /**
-   * @brief Возвращает HTML-опции списка сетей отдельно (для динамического обновления).
-   */
-  server.on("/get_networks", HTTP_GET, []() {
-    server.send(200, "text/html", getCachedNetworks());
   });
 
   /**
@@ -363,13 +347,31 @@ void setupWebHandlers() {
   });
 
   /**
-   * @brief Полный сброс настроек устройства.
+   * @brief Сброс настроек WiFi.
    */
   server.on("/reset", HTTP_GET, []() {
     preferences.begin("wifi-config", false);
+
+    // Удаляем только ключи, отвечающие за Wi-Fi
+    preferences.remove("ssid");
+    preferences.remove("pass");
+
+    // preferences.clear();
+    preferences.end();
+    server.send(200, "text/plain", "Reset WiFi OK");
+    delay(1000);
+    ESP.restart();
+  });
+
+  /**
+   * @brief Полный сброс настроек устройства.
+   */
+  server.on("/full_reset", HTTP_GET, []() {
+    preferences.begin("wifi-config", false);
+
     preferences.clear();
     preferences.end();
-    server.send(200, "text/plain", "Reset OK");
+    server.send(200, "text/plain", "Full Reset OK");
     delay(1000);
     ESP.restart();
   });
@@ -378,6 +380,23 @@ void setupWebHandlers() {
    * @brief Обработка настроек яркости и выбора города.
    */
   server.on("/save_settings", HTTP_POST, handleSaveSettings);
+
+  /**
+   * @brief Возвращает статус сканирования для JS-скрипта.
+   * -1: в процессе, -2: не начиналось, >=0: количество найденных сетей.
+   */
+  server.on("/scan_status", HTTP_GET, []() {
+    server.send(200, "text/plain", String(WiFi.scanComplete()));
+  });
+
+  /**
+   * @brief Принудительная перезагрузка контроллера.
+   */
+  server.on("/reboot", HTTP_GET, []() {
+    server.send(200, "text/plain", "Rebooting...");
+    delay(1000);
+    ESP.restart();
+  });
 
   /**
    * @brief Перенаправление для Captive Portal.
@@ -399,11 +418,7 @@ void startConfigMode() {
     WiFi.mode(WIFI_AP);
     WiFi.softAP(apName.c_str());
     
-    /**
-     * Инициируем асинхронное сканирование сразу при старте режима AP.
-     * Это гарантирует, что к моменту открытия пользователем страницы
-     * список сетей, скорее всего, уже будет готов.
-     */
+    // Сразу инициируем первое сканирование, чтобы к открытию страницы был кэш
     WiFi.scanNetworks(true);
 
     dnsServer.start(53, "*", WiFi.softAPIP());

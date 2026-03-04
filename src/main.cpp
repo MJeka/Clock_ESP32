@@ -41,7 +41,7 @@ uint32_t lastReconnectAttempt = 0; // Время последней попытк
 unsigned long lastUpdateTime = 0;
 unsigned long lastWeatherCheck = 0;
 const unsigned long weatherInterval = 30 * 60 * 1000; // 30 мин * 60 сек * 1000 мс = 1 800 000 мс
-uint32_t configTimeout = 5 * 60 * 1000;  // Таймер автоперезагрузки в режиме точки доступа 15 мин * 60 сек * 1000 мс = 900 000 мс
+uint32_t configTimeout = 15 * 60 * 1000;  // Таймер автоперезагрузки в режиме точки доступа 15 мин * 60 сек * 1000 мс = 900 000 мс
 bool isConfigMode = false;    // Флаг активного режима настройки
 uint32_t configStartTime = 0; // Время запуска режима AP
 uint32_t lastDisplayUpdate = 0; // Время последнего обновления экрана
@@ -572,7 +572,6 @@ void finalize_ui_startup(const char* ip_str) {
 // =============================================================================
 // ИНИЦИАЛИЗАЦИЯ (SETUP)
 // =============================================================================
-
 void setup() {
   // Инициализация аппаратного Serial-порта для отладки
   Serial.begin(115200);
@@ -591,7 +590,19 @@ void setup() {
   ui_init(); // Загрузка интерфейса SquareLine под черным слоем
   delay(1000);
 
-  // Попытка подключения WiFi
+  // ПРОВЕРКА: Если настройки WiFi отсутствуют, сразу переходим в режим точки доступа
+  if (strlen(ssid) == 0) {
+    logInfo("No WiFi settings found. Starting AP mode immediately.");
+    update_screen_status("Настройки не найдены\nЗапуск точки доступа...");
+    delay(2000);
+    
+    generateAPName(); // Генерация уникального имени точки доступа на основе MAC-адреса
+    setupWebHandlers(); // Настройка обработчиков веб-сервера для режима AP
+    startConfigMode(); // Запуск режима точки доступа и веб-сервера для настройки
+    return; // Прекращаем выполнение setup, так как мы ушли в режим настройки
+  }
+
+  // Попытка подключения WiFi (если SSID найден в памяти)
   if (strlen(ssid) > 0) {
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
