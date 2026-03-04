@@ -440,22 +440,14 @@ void handle_network_tasks(uint32_t now, int current_wifi_status) {
   }
 }
 
-// =============================================================================
-// ИНИЦИАЛИЗАЦИЯ (SETUP)
-// =============================================================================
-
-void setup() {
-  // Инициализация аппаратного Serial-порта для отладки
-  Serial.begin(115200);
-  delay(500);   // Для стабилизации Serial
-
-  // Загрузка конфигурации из памяти
+/**
+ * @brief Загрузка пользовательских настроек из энергонезависимой памяти.
+ */
+void load_system_preferences() {
   preferences.begin("wifi-config", true);
   strlcpy(ssid, preferences.getString("ssid", "").c_str(), sizeof(ssid));
-  strlcpy(password, preferences.getString("pass", "").c_str(),
-          sizeof(password));
-  strlcpy(weather_city, preferences.getString("city", city).c_str(),
-          sizeof(weather_city));
+  strlcpy(password, preferences.getString("pass", "").c_str(), sizeof(password));
+  strlcpy(weather_city, preferences.getString("city", city).c_str(), sizeof(weather_city));
 
   dayBrightness = preferences.getInt("day_br", 255);
   nightBrightness = preferences.getInt("night_br", 20);
@@ -463,8 +455,12 @@ void setup() {
   nightEndHour = preferences.getInt("n_end", 7);
 
   preferences.end();
+}
 
-  // Инициализация аппаратной части
+/**
+ * @brief Базовая настройка дисплея и графической библиотеки LVGL.
+ */
+void init_display_subsystem() {
   tft.begin();
   tft.setRotation(3);
   tft.setSwapBytes(true);
@@ -475,7 +471,6 @@ void setup() {
   ledcAttach(ledPin, ledFreq, ledRes);
   ledcWrite(ledPin, dayBrightness); // Установка начальной яркости
 
-  // Инициализация LVGL
   lv_init();
   lv_disp_draw_buf_init(&draw_buf, buf, NULL, 320 * 20);
   static lv_disp_drv_t disp_drv;
@@ -485,8 +480,12 @@ void setup() {
   disp_drv.flush_cb = my_disp_flush;
   disp_drv.draw_buf = &draw_buf;
   lv_disp_drv_register(&disp_drv);
+}
 
-  // Создание черного слоя заставки
+/**
+ * @brief Создание и настройка загрузочного экрана (Splash Screen).
+ */
+void create_boot_screen() {
   lv_obj_t *top_layer = lv_layer_top();
   lv_obj_set_style_bg_opa(top_layer, LV_OPA_COVER, 0);
   lv_obj_set_style_bg_color(top_layer, lv_color_hex(0x000000), 0);
@@ -496,26 +495,18 @@ void setup() {
   lv_obj_set_style_text_font(load_label, &ui_font_roboto24, 0);
   lv_obj_set_style_text_align(load_label, LV_TEXT_ALIGN_CENTER, 0);
   lv_obj_align(load_label, LV_ALIGN_CENTER, 0, 0);
+}
 
-  update_screen_status("Инициализация...");
-  ui_init(); // Загрузка интерфейса SquareLine под черным слоем
-  delay(1000);
-
-  // Попытка подключения WiFi
-  if (strlen(ssid) > 0) {
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, password);
-    logInfo("WiFi connect initiated for %s", ssid);
-  }
-
-  // Ожидание завершения подключения WiFi
+/**
+ * @brief Цикл ожидания подключения к WiFi с визуализацией прогресса.
+ */
+void wait_for_wifi() {
   update_screen_status("Поиск сети...");
   int wait_retry = 0;
   int dot_count = 0;
   while (WiFi.status() != WL_CONNECTED && wait_retry < 30) {
     String dots = "";
-    for (int i = 0; i < dot_count; i++)
-      dots += ".";
+    for (int i = 0; i < dot_count; i++) dots += ".";
 
     char msg[64];
     snprintf(msg, sizeof(msg), "Подключение к\n%s%s", ssid, dots.c_str());
@@ -530,47 +521,109 @@ void setup() {
       yield();
     }
   }
+}
 
-  // РАЗВИЛКА: Успех или Режим точки доступа
+/**
+ * @brief Синхронизация времени через NTP серверы.
+ */
+void sync_system_time(const char* ip_str) {
+  char msg[64];
+  snprintf(msg, sizeof(msg), "Синхронизация времени...\nIP: %s", ip_str);
+  update_screen_status(msg);
+
+  configTzTime(TZ_INFO, ntpServer, ntpServer2);
+
+  int ntp_retry = 0;
+  struct tm ti;
+  while (!getLocalTime(&ti) && ntp_retry < 10) {
+    ArduinoOTA.handle(); // Позволит прошить устройство, даже если NTP завис
+    lv_timer_handler();
+    delay(500);
+    ntp_retry++;
+  }
+}
+
+/**
+ * @brief Финальная очистка загрузочного слоя и открытие основного интерфейса.
+ */
+void finalize_ui_startup(const char* ip_str) {
+  char msg[64];
+  snprintf(msg, sizeof(msg), "Система готова!\nIP: %s", ip_str);
+  update_screen_status(msg);
+  delay(2000);
+
+  // --- КРИТИЧЕСКИЙ БЛОК ОЧИСТКИ ЗАСТАВКИ ---
+  if (load_label != nullptr) {
+    lv_obj_del(load_label);
+    load_label = nullptr;
+  }
+
+  lv_obj_t *top_layer = lv_layer_top();
+  lv_obj_set_style_bg_opa(top_layer, LV_OPA_TRANSP, 0);
+  lv_obj_add_flag(top_layer, LV_OBJ_FLAG_HIDDEN);
+
+  lv_obj_invalidate(lv_scr_act());
+  lv_timer_handler();
+  lv_refr_now(NULL);
+
+  logInfo("System Ready and Interface Visible!");
+}
+
+// =============================================================================
+// ИНИЦИАЛИЗАЦИЯ (SETUP)
+// =============================================================================
+
+void setup() {
+  // Инициализация аппаратного Serial-порта для отладки
+  Serial.begin(115200);
+  delay(500);   // Для стабилизации Serial
+
+  // Загрузка конфигурации из памяти
+  load_system_preferences();
+
+  // Инициализация аппаратной части и LVGL
+  init_display_subsystem();
+
+  // Создание черного слоя заставки
+  create_boot_screen();
+
+  update_screen_status("Инициализация...");
+  ui_init(); // Загрузка интерфейса SquareLine под черным слоем
+  delay(1000);
+
+  // Попытка подключения WiFi
+  if (strlen(ssid) > 0) {
+    WiFi.mode(WIFI_STA);
+    WiFi.begin(ssid, password);
+    logInfo("WiFi connect initiated for %s", ssid);
+  }
+
+  // Ожидание завершения подключения WiFi
+  wait_for_wifi();
+
+  // РАЗВИЛКА: Запуск или Режим точки доступа
   if (WiFi.status() == WL_CONNECTED) {
-
-    // Буфер для формирования сообщения
-    char msg[64];
-    
-    // Получаем IP адрес
     IPAddress ip = WiFi.localIP();
+    char ip_str[20];
+    strncpy(ip_str, ip.toString().c_str(), sizeof(ip_str));
 
-    snprintf(msg, sizeof(msg), "Сеть подключена!\nIP: %s", ip.toString().c_str());
-    logInfo("IP - %s", ip.toString().c_str());
+    char msg[64];
+    snprintf(msg, sizeof(msg), "Сеть подключена!\nIP: %s", ip_str);
+    logInfo("IP - %s", ip_str);
     update_screen_status(msg);
-
-    // update_screen_status("Сеть подключена!");
     delay(1000);
 
-    // Инициализация службы обновления по воздуху
+    // Инициализация сетевых служб
     setupOTA();
-
     server.begin();
     setupWebHandlers();
 
-    // update_screen_status("Синхронизация времени...");
-    snprintf(msg, sizeof(msg), "Синхронизация времени...\nIP: %s", ip.toString().c_str());
-    update_screen_status(msg);
-
-    configTzTime(TZ_INFO, ntpServer, ntpServer2);
-
-    int ntp_retry = 0;
-    struct tm ti;
-    while (!getLocalTime(&ti) && ntp_retry < 10) {
-      ArduinoOTA.handle(); // Позволит прошить устройство, даже если NTP завис
-      lv_timer_handler();
-      delay(500);
-      ntp_retry++;
-    }
+    // Синхронизация времени
+    sync_system_time(ip_str);
     delay(1000);
 
-    // update_screen_status("Обновление погоды...");
-    snprintf(msg, sizeof(msg), "Обновление погоды...\nIP: %s", ip.toString().c_str());
+    // Обновление погоды
+    snprintf(msg, sizeof(msg), "Обновление погоды...\nIP: %s", ip_str);
     update_screen_status(msg);
     fetch_weather();
     delay(1000);
@@ -578,29 +631,8 @@ void setup() {
     // Заполняем интерфейс данными перед открытием
     update_ui_elements();
 
-    // update_screen_status("Система готова!");
-    snprintf(msg, sizeof(msg), "Система готова!\nIP: %s", ip.toString().c_str());
-    update_screen_status(msg);
-    delay(2000);
-
-    // --- КРИТИЧЕСКИЙ БЛОК ОЧИСТКИ ЗАСТАВКИ ---
-
-    // Удаляем текст статуса
-    if (load_label != nullptr) {
-      lv_obj_del(load_label);
-      load_label = nullptr;
-    }
-
-    // Делаем верхний слой полностью прозрачным и скрываем его
-    lv_obj_set_style_bg_opa(top_layer, LV_OPA_TRANSP, 0);
-    lv_obj_add_flag(top_layer, LV_OBJ_FLAG_HIDDEN);
-
-    // Принудительная перерисовка активного экрана СЕЙЧАС
-    lv_obj_invalidate(lv_scr_act());
-    lv_timer_handler();
-    lv_refr_now(NULL);
-
-    logInfo("System Ready and Interface Visible!");
+    // Завершение работы заставки и показ основного UI
+    finalize_ui_startup(ip_str);
   
   } else {
     // Если WiFi не найден — уходим в режим настройки
@@ -608,9 +640,9 @@ void setup() {
     WiFi.disconnect(true);
     delay(2000);
 
-    generateAPName();
-    setupWebHandlers();
-    startConfigMode(); // Функция с бесконечным циклом внутри
+    generateAPName(); // Генерация уникального имени точки доступа на основе MAC-адреса
+    setupWebHandlers(); // Настройка обработчиков веб-сервера для режима AP
+    startConfigMode(); // Запуск режима точки доступа и веб-сервера для настройки
   }
 }
 
