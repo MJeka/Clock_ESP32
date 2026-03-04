@@ -212,34 +212,35 @@ String buildNetworkList(int n) {
  * Исключает блокировку основного цикла (loop).
  */
 String getCachedNetworks() {
-  // Проверяем текущий статус сканера
+  /**
+   * Получаем состояние асинхронного сканера.
+   * Статус -2 означает, что результаты отсутствуют или удалены.
+   * Статус -1 означает, что процесс сканирования еще активен.
+   */
   int n = WiFi.scanComplete(); 
 
   if (n == -2) {
     /**
-     * Сканирование еще не инициировано. Запускаем в фоновом режиме (async = true).
-     * Это не остановит выполнение кода и часов.
+     * Если кэш пуст, инициируем фоновое сканирование.
+     * Параметр 'true' указывает на асинхронное выполнение.
      */
     WiFi.scanNetworks(true); 
-    return "<option>Сканирование начато...</option>";
+    return "<option value=''>Сканирование начато...</option>";
   }
   
   if (n == -1) {
-    // Сканирование в процессе выполнения
-    return "<option>Поиск сетей (обновите позже)...</option>";
+    /**
+     * Возвращаем временную заглушку на период работы радиомодуля.
+     */
+    return "<option value=''>Поиск сетей (подождите)...</option>";
   }
 
-  // Если n >= 0, значит данные в кэше готовы
-  String list = buildNetworkList(n);
-  
   /**
-   * Очищаем результаты сканирования из памяти после сборки списка,
-   * чтобы при следующем вызове запустить поиск заново.
+   * Сборка итогового списка. 
+   * Мы намеренно НЕ вызываем WiFi.scanDelete(), чтобы сохранить данные в кэше
+   * для последующих запросов до тех пор, пока пользователь не инициирует обновление вручную.
    */
-  WiFi.scanDelete(); 
-  WiFi.scanNetworks(true); 
-  
-  return list;
+  return buildNetworkList(n);
 }
 
 /**
@@ -324,6 +325,23 @@ void setupWebHandlers() {
   });
 
   /**
+   * @brief Эндпоинт для AJAX-запроса обновления списка сетей.
+   * Принудительно очищает кэш и запускает новый цикл сканирования.
+   */
+  server.on("/scan", HTTP_GET, []() {
+    WiFi.scanDelete();
+    WiFi.scanNetworks(true);
+    server.send(200, "text/plain", "OK");
+  });
+
+  /**
+   * @brief Возвращает HTML-опции списка сетей отдельно (для динамического обновления).
+   */
+  server.on("/get_networks", HTTP_GET, []() {
+    server.send(200, "text/html", getCachedNetworks());
+  });
+
+  /**
    * @brief Сохранение учетных данных Wi-Fi.
    */
   server.on("/save", HTTP_POST, []() {
@@ -380,6 +398,14 @@ void setupWebHandlers() {
 void startConfigMode() {
     WiFi.mode(WIFI_AP);
     WiFi.softAP(apName.c_str());
+    
+    /**
+     * Инициируем асинхронное сканирование сразу при старте режима AP.
+     * Это гарантирует, что к моменту открытия пользователем страницы
+     * список сетей, скорее всего, уже будет готов.
+     */
+    WiFi.scanNetworks(true);
+
     dnsServer.start(53, "*", WiFi.softAPIP());
     server.begin();
 
@@ -415,9 +441,6 @@ void handleConfigMode() {
         uint32_t s = remaining % 60;
 
         char msg[128];
-        // snprintf(msg, sizeof(msg), 
-        //          "НАСТРОЙКА\nСеть: %s\nIP: 192.168.4.1\nПерезагрузка через %u сек\n(%u:%02u)", 
-        //          apName.c_str(), remaining, m, s);
         snprintf(msg, sizeof(msg), 
                  "НАСТРОЙКА\nСеть: %s\nIP: 192.168.4.1\n\nПерезагрузка через\n%u:%02u", 
                  apName.c_str(), m, s);
