@@ -71,6 +71,15 @@ const char WEB_STYLE[] PROGMEM = R"=====(
   button { background: #008cff; color: white; font-weight: bold; cursor: pointer; }
   .btn-save { background: #28a745; }
   
+  /* Специфический стиль для кнопки обновления сетей */
+  .btn-refresh { background: #555; margin-top: 0; margin-bottom: 20px; font-size: 13px; padding: 10px; }
+  
+  /* Кнопка сброса (красная) */
+  .btn-reset { background: #dc3545; margin-top: 5px; }
+  
+  /* Кнопка перезагрузки (оранжевая/желтая) */
+  .btn-reboot { background: #fd7e14; margin-top: 20px; }
+  
   /* Ссылка для полного сброса настроек */
   .reset-link { 
     color: #ff4444; 
@@ -115,14 +124,19 @@ String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
   s += "<div class='container'>";
 
   // --- БЛОК НАСТРОЙКИ WIFI ---
-  s += "<div class='card'><h2>Настройка WiFi</h2><form action='/save' method='POST'>";
+  s += "<div class='card'><h2>Настройка WiFi</h2>";
+  // Кнопка для ручного обновления списка сетей
+  s += "<button type='button' id='refreshBtn' class='btn-refresh' onclick='refreshWiFi()'>ОБНОВИТЬ СПИСОК СЕТЕЙ</button>";
+  s += "<form action='/save' method='POST'>";
   s += "<label>Доступные сети</label>";
   s += "<select name='ssid_select' id='ssid_select' onchange='document.getElementById(\"custom_ssid\").value=this.value'>";
   s += "<option value=''>-- Выберите сеть --</option>" + networks + "</select>";
   s += "<input type='text' name='custom_ssid' id='custom_ssid' placeholder='Имя сети (SSID)' value='" + savedSSID + "'>";
   s += "<div class='pass-wrapper'><input type='password' name='pass' id='pass' placeholder='Пароль'>";
   s += "<div id='eye_icon' class='eye-btn eye-closed' onclick='togglePass()'></div></div>";
-  s += "<button type='submit'>СОХРАНИТЬ WIFI</button></form></div>";
+  s += "<button type='submit'>СОХРАНИТЬ WIFI</button></form>";
+  // Кнопка сброса только настроек WiFi
+  s += "<button class='btn-reset' onclick='if(confirm(\"Сбросить настройки WiFi?\")) location.href=\"/reset\"'>СБРОСИТЬ НАСТРОЙКИ WIFI</button></div>";
 
   // --- БЛОК НАСТРОЕК ЭКРАНА И ПОГОДЫ ---
   s += "<div class='card'><h2>Настройки устройства</h2><form action='/save_settings' method='POST'>";
@@ -140,7 +154,13 @@ String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
   s += "<input type='number' name='n_en' min='0' max='23' value='" + String(nEnd) + "'>";
 
   s += "<button type='submit' class='btn-save'>ОБНОВИТЬ НАСТРОЙКИ</button></form>";
-  s += "<a href='/reset' class='reset-link' onclick='return confirm(\"Сбросить все настройки?\")'>СБРОСИТЬ ВСЁ</a></div>";
+  s += "</div>";
+
+  // --- КНОПКА ПЕРЕЗАГРУЗКИ В САМОМ НИЗУ ---
+  s += "<button class='btn-reboot' onclick='if(confirm(\"Перезагрузить устройство?\")) location.href=\"/reboot\"'>ПЕРЕЗАГРУЗИТЬ УСТРОЙСТВО</button>";
+
+  // --- КНОПКА ПОЛНОГО СБРОСА (ЗАВОДСКИЕ НАСТРОЙКИ) ---
+  s += "<a href='/full_reset' class='reset-link' style='text-align:center; border: 1px solid #ff4444; padding: 10px; border-radius: 8px;' onclick='return confirm(\"ВНИМАНИЕ! Это удалит ВСЕ настройки (WiFi, город, яркость). Продолжить?\")'>ПОЛНЫЙ СБРОС (ЗАВОДСКИЕ НАСТРОЙКИ)</a>";
 
   s += "</div>";
 
@@ -148,6 +168,25 @@ String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
   s += "<script>";
   /* Загрузка локальной базы городов, переданной с ESP */
   s += "const localCities = " + citiesJson + ";";
+
+  /**
+   * Функция ручного обновления WiFi.
+   * Инициирует сканирование и опрашивает сервер до готовности списка.
+   */
+  s += "function refreshWiFi() {";
+  s += "  var btn = document.getElementById('refreshBtn');";
+  s += "  btn.disabled = true; btn.innerText = 'ПОИСК СЕТЕЙ...';";
+  s += "  fetch('/scan_trigger').then(function() {";
+  s += "    var checkStatus = setInterval(function() {";
+  s += "      fetch('/scan_status').then(function(r) { return r.text(); }).then(function(status) {";
+  s += "        if (parseInt(status) >= 0) {";
+  s += "          clearInterval(checkStatus);";
+  s += "          location.reload();";
+  s += "        }";
+  s += "      });";
+  s += "    }, 1500);";
+  s += "  });";
+  s += "}";
 
   s += "function togglePass(){";
   s += "  var x=document.getElementById('pass'); var icon=document.getElementById('eye_icon');";

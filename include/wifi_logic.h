@@ -29,6 +29,10 @@ extern int nightStartHour;
 extern int nightEndHour;
 extern void check_brightness(struct tm *timeinfo = nullptr);
 extern void fetch_weather();
+extern uint32_t configTimeout;
+extern bool isConfigMode;
+extern uint32_t configStartTime;
+extern uint32_t lastDisplayUpdate;
 
 // =============================================================================
 // ЛОГИРОВАНИЕ И ИНТЕРФЕЙС
@@ -185,15 +189,59 @@ void generateAPName() {
 }
 
 /**
- * @brief Сканирует WiFi эфир и формирует список HTML-опций.
+ * @brief Вспомогательная функция для сборки HTML-списка из результатов сканирования.
+ * @param n Количество найденных сетей.
  */
-String scanNetworks() {
-  int n = WiFi.scanNetworks();
+String buildNetworkList(int n) {
+  if (n <= 0) return "<option value=''>Сети не найдены/</option>";
+  
   String list = "";
   for (int i = 0; i < n; ++i) {
+    /**
+     * Формируем строку выбора: SSID и уровень сигнала в дБм.
+     * Используем локальные переменные для ускорения сборки строки.
+     */
     list += "<option value='" + WiFi.SSID(i) + "'>" + WiFi.SSID(i) + " (" +
             String(WiFi.RSSI(i)) + " dBm)</option>";
   }
+  return list;
+}
+
+/**
+ * @brief Формирует список HTML-опций на основе последнего сканирования (асинхронно).
+ * Исключает блокировку основного цикла (loop).
+ */
+String getCachedNetworks() {
+  // Проверяем текущий статус сканера
+  int n = WiFi.scanComplete(); 
+
+  if (n == -2) {
+    /**
+     * Сканирование еще не инициировано. Запускаем в фоновом режиме (async = true).
+     * Это не остановит выполнение кода и часов.
+     */
+    WiFi.scanNetworks(true); 
+    return "<option>Сканирование начато...</option>";
+  }
+  
+  if (n == -1) {
+    // Сканирование в процессе выполнения
+    return "<option>Поиск сетей (подождите)...</option>";
+  }
+
+  // Если n >= 0, значит данные в кэше готовы. Мы их отдаем, но НЕ удаляем,
+  // чтобы список был доступен до ручного запроса на обновление.
+  return buildNetworkList(n);
+}
+
+/**
+ * @brief Старая версия для совместимости (если нужна блокирующая работа).
+ */
+String scanNetworks() {
+  // Выполняем синхронное сканирование (блокирует loop до завершения)
+  int n = WiFi.scanNetworks();
+  String list = buildNetworkList(n);
+  WiFi.scanDelete();
   return list;
 }
 
@@ -262,9 +310,19 @@ void setupWebHandlers() {
    */
   server.on("/", HTTP_GET, []() {
     server.send(200, "text/html",
-                getIndexPage(scanNetworks(), ssid, dayBrightness,
+                getIndexPage(getCachedNetworks(), ssid, dayBrightness,
                              nightBrightness, nightStartHour, nightEndHour,
                              String(weather_city), getCitiesJson()));
+  });
+
+  /**
+   * @brief Инициирует принудительное пересканирование сетей.
+   * Очищает кэш и запускает новый фоновый поиск.
+   */
+  server.on("/scan_trigger", HTTP_GET, []() {
+    WiFi.scanDelete();        // Удаление старого результата
+    WiFi.scanNetworks(true);  // Запуск нового асинхронного поиска
+    server.send(200, "text/plain", "OK");
   });
 
   /**
@@ -289,13 +347,31 @@ void setupWebHandlers() {
   });
 
   /**
-   * @brief Полный сброс настроек устройства.
+   * @brief Сброс настроек WiFi.
    */
   server.on("/reset", HTTP_GET, []() {
     preferences.begin("wifi-config", false);
+
+    // Удаляем только ключи, отвечающие за Wi-Fi
+    preferences.remove("ssid");
+    preferences.remove("pass");
+
+    // preferences.clear();
+    preferences.end();
+    server.send(200, "text/plain", "Reset WiFi OK");
+    delay(1000);
+    ESP.restart();
+  });
+
+  /**
+   * @brief Полный сброс настроек устройства.
+   */
+  server.on("/full_reset", HTTP_GET, []() {
+    preferences.begin("wifi-config", false);
+
     preferences.clear();
     preferences.end();
-    server.send(200, "text/plain", "Reset OK");
+    server.send(200, "text/plain", "Full Reset OK");
     delay(1000);
     ESP.restart();
   });
@@ -304,6 +380,23 @@ void setupWebHandlers() {
    * @brief Обработка настроек яркости и выбора города.
    */
   server.on("/save_settings", HTTP_POST, handleSaveSettings);
+
+  /**
+   * @brief Возвращает статус сканирования для JS-скрипта.
+   * -1: в процессе, -2: не начиналось, >=0: количество найденных сетей.
+   */
+  server.on("/scan_status", HTTP_GET, []() {
+    server.send(200, "text/plain", String(WiFi.scanComplete()));
+  });
+
+  /**
+   * @brief Принудительная перезагрузка контроллера.
+   */
+  server.on("/reboot", HTTP_GET, []() {
+    server.send(200, "text/plain", "Rebooting...");
+    delay(1000);
+    ESP.restart();
+  });
 
   /**
    * @brief Перенаправление для Captive Portal.
@@ -322,19 +415,56 @@ void setupWebHandlers() {
  * @brief Запуск точки доступа и цикл обработки запросов (режим настройки).
  */
 void startConfigMode() {
-  WiFi.mode(WIFI_AP);
-  WiFi.softAP(apName.c_str());
-  dnsServer.start(53, "*", WiFi.softAPIP());
-  server.begin();
-  update_screen_status(
-      ("НАСТРОЙКА\nСеть: " + apName + "\nIP: 192.168.4.1").c_str());
-  while (true) {
+    WiFi.mode(WIFI_AP);
+    WiFi.softAP(apName.c_str());
+    
+    // Сразу инициируем первое сканирование, чтобы к открытию страницы был кэш
+    WiFi.scanNetworks(true);
+
+    dnsServer.start(53, "*", WiFi.softAPIP());
+    server.begin();
+
+    configStartTime = millis(); // Засекаем время старта
+    isConfigMode = true;        // Активируем флаг режима настройки
+    
+    logInfo("Config mode initialized via AP: %s", apName.c_str());
+}
+
+/**
+ * @brief Обработка логики конфигурирования и таймера перезагрузки.
+ */
+void handleConfigMode() {
+    if (!isConfigMode) return; // Если мы не в режиме настройки — выходим
+
+    uint32_t currentMillis = millis();
+    uint32_t elapsed = currentMillis - configStartTime;
+
+    // Проверка таймаута
+    if (elapsed >= configTimeout) {
+        logInfo("Timeout. Restarting...");
+        update_screen_status("Время вышло!\nПерезагрузка...");
+        delay(2000);
+        ESP.restart();
+    }
+
+    // Обновление экрана раз в секунду
+    if (currentMillis - lastDisplayUpdate >= 1000) {
+        lastDisplayUpdate = currentMillis;
+
+        uint32_t remaining = (configTimeout - elapsed) / 1000;
+        uint32_t m = remaining / 60;
+        uint32_t s = remaining % 60;
+
+        char msg[128];
+        snprintf(msg, sizeof(msg), 
+                 "НАСТРОЙКА\nСеть: %s\nIP: 192.168.4.1\n\nПерезагрузка через\n%u:%02u", 
+                 apName.c_str(), m, s);
+        update_screen_status(msg);
+    }
+
+    // 3. Обслуживание сетевых сервисов
     dnsServer.processNextRequest();
     server.handleClient();
-    lv_timer_handler();
-    delay(10);
-    yield();
-  }
 }
 
 #endif // WIFI_LOGIC_H
