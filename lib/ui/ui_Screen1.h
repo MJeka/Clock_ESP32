@@ -42,6 +42,7 @@ extern lv_obj_t *ui_Image38;
 extern lv_obj_t *ui_Image1;
 extern lv_obj_t *ui_Image2;
 extern lv_obj_t *ui_Image3;
+extern lv_obj_t *ui_WiFiStatus;
 // CUSTOM VARIABLES
 
 #ifdef __cplusplus

@@ -5,7 +5,7 @@
 
 #include "ui.h"
 
-lv_obj_t *ui_Screen1 = NULL;lv_obj_t *ui_uiLabelTime1 = NULL;lv_obj_t *ui_uiLabelDate1 = NULL;lv_obj_t *ui_uiLabelDay1 = NULL;lv_obj_t *ui_uiLabelTemp1 = NULL;lv_obj_t *ui_uiLabelHumidity1 = NULL;lv_obj_t *ui_uiLabelPressure1 = NULL;lv_obj_t *ui_Image4 = NULL;lv_obj_t *ui_Image5 = NULL;lv_obj_t *ui_Image6 = NULL;lv_obj_t *ui_Container2 = NULL;lv_obj_t *ui_uiLabelWeather = NULL;lv_obj_t *ui_Image7 = NULL;lv_obj_t *ui_Image8 = NULL;lv_obj_t *ui_Image9 = NULL;lv_obj_t *ui_Image28 = NULL;lv_obj_t *ui_Image29 = NULL;lv_obj_t *ui_Image30 = NULL;lv_obj_t *ui_Image31 = NULL;lv_obj_t *ui_Image32 = NULL;lv_obj_t *ui_Image33 = NULL;lv_obj_t *ui_Image34 = NULL;lv_obj_t *ui_Image35 = NULL;lv_obj_t *ui_Image36 = NULL;lv_obj_t *ui_Image37 = NULL;lv_obj_t *ui_Image38 = NULL;lv_obj_t *ui_Image1 = NULL;lv_obj_t *ui_Image2 = NULL;lv_obj_t *ui_Image3 = NULL;
+lv_obj_t *ui_Screen1 = NULL;lv_obj_t *ui_uiLabelTime1 = NULL;lv_obj_t *ui_uiLabelDate1 = NULL;lv_obj_t *ui_uiLabelDay1 = NULL;lv_obj_t *ui_uiLabelTemp1 = NULL;lv_obj_t *ui_uiLabelHumidity1 = NULL;lv_obj_t *ui_uiLabelPressure1 = NULL;lv_obj_t *ui_Image4 = NULL;lv_obj_t *ui_Image5 = NULL;lv_obj_t *ui_Image6 = NULL;lv_obj_t *ui_Container2 = NULL;lv_obj_t *ui_uiLabelWeather = NULL;lv_obj_t *ui_Image7 = NULL;lv_obj_t *ui_Image8 = NULL;lv_obj_t *ui_Image9 = NULL;lv_obj_t *ui_Image28 = NULL;lv_obj_t *ui_Image29 = NULL;lv_obj_t *ui_Image30 = NULL;lv_obj_t *ui_Image31 = NULL;lv_obj_t *ui_Image32 = NULL;lv_obj_t *ui_Image33 = NULL;lv_obj_t *ui_Image34 = NULL;lv_obj_t *ui_Image35 = NULL;lv_obj_t *ui_Image36 = NULL;lv_obj_t *ui_Image37 = NULL;lv_obj_t *ui_Image38 = NULL;lv_obj_t *ui_Image1 = NULL;lv_obj_t *ui_Image2 = NULL;lv_obj_t *ui_Image3 = NULL;lv_obj_t *ui_WiFiStatus = NULL;
 // event funtions
 
 // build funtions
@@ -21,7 +21,7 @@ lv_obj_set_height( ui_uiLabelTime1, LV_SIZE_CONTENT);   /// 1
 lv_obj_set_x( ui_uiLabelTime1, -3 );
 lv_obj_set_y( ui_uiLabelTime1, -60 );
 lv_obj_set_align( ui_uiLabelTime1, LV_ALIGN_CENTER );
-lv_label_set_text(ui_uiLabelTime1,"22:22");
+lv_label_set_text(ui_uiLabelTime1,"");
 lv_obj_set_style_text_color(ui_uiLabelTime1, lv_color_hex(0xF4FE23), LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_text_opa(ui_uiLabelTime1, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_text_align(ui_uiLabelTime1, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN| LV_STATE_DEFAULT);
@@ -33,7 +33,7 @@ lv_obj_set_height( ui_uiLabelDate1, LV_SIZE_CONTENT);   /// 1
 lv_obj_set_x( ui_uiLabelDate1, 0 );
 lv_obj_set_y( ui_uiLabelDate1, 10 );
 lv_obj_set_align( ui_uiLabelDate1, LV_ALIGN_CENTER );
-lv_label_set_text(ui_uiLabelDate1,"21.02.2026");
+lv_label_set_text(ui_uiLabelDate1,"");
 lv_obj_set_style_text_color(ui_uiLabelDate1, lv_color_hex(0x00FFA8), LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_text_opa(ui_uiLabelDate1, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_text_font(ui_uiLabelDate1, &ui_font_dsdigital48, LV_PART_MAIN| LV_STATE_DEFAULT);
@@ -44,7 +44,7 @@ lv_obj_set_height( ui_uiLabelDay1, LV_SIZE_CONTENT);   /// 1
 lv_obj_set_x( ui_uiLabelDay1, 115 );
 lv_obj_set_y( ui_uiLabelDay1, 72 );
 lv_obj_set_align( ui_uiLabelDay1, LV_ALIGN_CENTER );
-lv_label_set_text(ui_uiLabelDay1,"СБ");
+lv_label_set_text(ui_uiLabelDay1,"");
 lv_obj_set_style_text_color(ui_uiLabelDay1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_text_opa(ui_uiLabelDay1, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_text_font(ui_uiLabelDay1, &ui_font_roboto36, LV_PART_MAIN| LV_STATE_DEFAULT);
@@ -55,7 +55,7 @@ lv_obj_set_height( ui_uiLabelTemp1, LV_SIZE_CONTENT);   /// 1
 lv_obj_set_x( ui_uiLabelTemp1, 148 );
 lv_obj_set_y( ui_uiLabelTemp1, 48 );
 lv_obj_set_align( ui_uiLabelTemp1, LV_ALIGN_LEFT_MID );
-lv_label_set_text(ui_uiLabelTemp1,"25.5°С");
+lv_label_set_text(ui_uiLabelTemp1,"");
 lv_obj_set_style_text_color(ui_uiLabelTemp1, lv_color_hex(0xFCED00), LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_text_opa(ui_uiLabelTemp1, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_text_font(ui_uiLabelTemp1, &ui_font_roboto24, LV_PART_MAIN| LV_STATE_DEFAULT);
@@ -66,7 +66,7 @@ lv_obj_set_height( ui_uiLabelHumidity1, LV_SIZE_CONTENT);   /// 1
 lv_obj_set_x( ui_uiLabelHumidity1, 148 );
 lv_obj_set_y( ui_uiLabelHumidity1, 78 );
 lv_obj_set_align( ui_uiLabelHumidity1, LV_ALIGN_LEFT_MID );
-lv_label_set_text(ui_uiLabelHumidity1,"88%");
+lv_label_set_text(ui_uiLabelHumidity1,"");
 lv_obj_set_style_text_color(ui_uiLabelHumidity1, lv_color_hex(0x66D9FA), LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_text_opa(ui_uiLabelHumidity1, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_text_font(ui_uiLabelHumidity1, &ui_font_roboto24, LV_PART_MAIN| LV_STATE_DEFAULT);
@@ -77,7 +77,7 @@ lv_obj_set_height( ui_uiLabelPressure1, LV_SIZE_CONTENT);   /// 1
 lv_obj_set_x( ui_uiLabelPressure1, 148 );
 lv_obj_set_y( ui_uiLabelPressure1, 105 );
 lv_obj_set_align( ui_uiLabelPressure1, LV_ALIGN_LEFT_MID );
-lv_label_set_text(ui_uiLabelPressure1,"888mm");
+lv_label_set_text(ui_uiLabelPressure1,"");
 lv_obj_set_style_text_color(ui_uiLabelPressure1, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT );
 lv_obj_set_style_text_opa(ui_uiLabelPressure1, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
 lv_obj_set_style_text_font(ui_uiLabelPressure1, &ui_font_roboto24, LV_PART_MAIN| LV_STATE_DEFAULT);
@@ -283,6 +283,16 @@ lv_obj_set_align( ui_Image3, LV_ALIGN_CENTER );
 lv_obj_add_flag( ui_Image3, LV_OBJ_FLAG_HIDDEN | LV_OBJ_FLAG_ADV_HITTEST );   /// Flags
 lv_obj_clear_flag( ui_Image3, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
 
+ui_WiFiStatus = lv_obj_create(ui_Screen1);
+lv_obj_remove_style_all(ui_WiFiStatus);
+lv_obj_set_width( ui_WiFiStatus, 8);
+lv_obj_set_height( ui_WiFiStatus, 8);
+lv_obj_set_x( ui_WiFiStatus, 152 );
+lv_obj_set_y( ui_WiFiStatus, -115 );
+lv_obj_set_align( ui_WiFiStatus, LV_ALIGN_CENTER );
+lv_obj_clear_flag( ui_WiFiStatus, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE );    /// Flags
+lv_obj_set_style_bg_color(ui_WiFiStatus, lv_color_hex(0x333333), LV_PART_MAIN | LV_STATE_DEFAULT );
+lv_obj_set_style_bg_opa(ui_WiFiStatus, 255, LV_PART_MAIN| LV_STATE_DEFAULT);
 }
 
 void ui_Screen1_screen_destroy(void)
@@ -319,5 +329,6 @@ ui_Image38= NULL;
 ui_Image1= NULL;
 ui_Image2= NULL;
 ui_Image3= NULL;
+ui_WiFiStatus= NULL;
 
 }

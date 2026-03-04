@@ -7,3 +7,4 @@ include/secrets.h
 backup/
 SquareLine/
 firmware.bin
+Themes.slt

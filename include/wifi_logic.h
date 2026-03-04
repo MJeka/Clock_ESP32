@@ -29,6 +29,10 @@ extern int nightStartHour;
 extern int nightEndHour;
 extern void check_brightness(struct tm *timeinfo = nullptr);
 extern void fetch_weather();
+extern uint32_t configTimeout;
+extern bool isConfigMode;
+extern uint32_t configStartTime;
+extern uint32_t lastDisplayUpdate;
 
 // =============================================================================
 // ЛОГИРОВАНИЕ И ИНТЕРФЕЙС
@@ -322,19 +326,52 @@ void setupWebHandlers() {
  * @brief Запуск точки доступа и цикл обработки запросов (режим настройки).
  */
 void startConfigMode() {
-  WiFi.mode(WIFI_AP);
-  WiFi.softAP(apName.c_str());
-  dnsServer.start(53, "*", WiFi.softAPIP());
-  server.begin();
-  update_screen_status(
-      ("НАСТРОЙКА\nСеть: " + apName + "\nIP: 192.168.4.1").c_str());
-  while (true) {
+    WiFi.mode(WIFI_AP);
+    WiFi.softAP(apName.c_str());
+    dnsServer.start(53, "*", WiFi.softAPIP());
+    server.begin();
+
+    configStartTime = millis(); // Засекаем время старта
+    isConfigMode = true;        // Активируем флаг режима настройки
+    
+    logInfo("Config mode initialized via AP: %s", apName.c_str());
+}
+
+/**
+ * @brief Обработка логики конфигурирования и таймера перезагрузки.
+ */
+void handleConfigMode() {
+    if (!isConfigMode) return; // Если мы не в режиме настройки — выходим
+
+    uint32_t currentMillis = millis();
+    uint32_t elapsed = currentMillis - configStartTime;
+
+    // Проверка таймаута
+    if (elapsed >= configTimeout) {
+        logInfo("Timeout. Restarting...");
+        update_screen_status("Время вышло!\nПерезагрузка...");
+        delay(2000);
+        ESP.restart();
+    }
+
+    // Обновление экрана раз в секунду
+    if (currentMillis - lastDisplayUpdate >= 1000) {
+        lastDisplayUpdate = currentMillis;
+
+        uint32_t remaining = (configTimeout - elapsed) / 1000;
+        uint32_t m = remaining / 60;
+        uint32_t s = remaining % 60;
+
+        char msg[128];
+        snprintf(msg, sizeof(msg), 
+                 "НАСТРОЙКА\nСеть: %s\nIP: 192.168.4.1\nПерезагрузка через %u сек\n(%u:%02u)", 
+                 apName.c_str(), remaining, m, s);
+        update_screen_status(msg);
+    }
+
+    // 3. Обслуживание сетевых сервисов
     dnsServer.processNextRequest();
     server.handleClient();
-    lv_timer_handler();
-    delay(10);
-    yield();
-  }
 }
 
 #endif // WIFI_LOGIC_H

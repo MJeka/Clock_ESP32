@@ -10,7 +10,6 @@
 #include <lvgl.h> // Движок графического интерфейса пользователя (UI Engine)
 #include "cities_db.h" // Компактная база городов для автодополнения (хранится в Flash-памяти)
 
-
 // =============================================================================
 // ПРОТОТИПЫ ФУНКЦИЙ
 // =============================================================================
@@ -33,6 +32,8 @@ char password[64] = "";
 String apName;
 char weather_city[64] = "";
 lv_obj_t *load_label = nullptr;
+static int last_wifi_status = -1; // Храним предыдущее состояние Wi-Fi для оптимизации обновлений UI
+uint32_t lastReconnectAttempt = 0; // Время последней попытки подключения к Wi-Fi для управления интервалом повторных попыток
 
 // =============================================================================
 // ТАЙМЕРЫ
@@ -40,6 +41,11 @@ lv_obj_t *load_label = nullptr;
 unsigned long lastUpdateTime = 0;
 unsigned long lastWeatherCheck = 0;
 const unsigned long weatherInterval = 30 * 60 * 1000; // 30 мин * 60 сек * 1000 мс = 1 800 000 мс
+uint32_t configTimeout = 15 * 60 * 1000;  // Таймер автоперезагрузки в режиме точки доступа 15 мин * 60 сек * 1000 мс = 900 000 мс
+bool isConfigMode = false;    // Флаг активного режима настройки
+uint32_t configStartTime = 0; // Время запуска режима AP
+uint32_t lastDisplayUpdate = 0; // Время последнего обновления экрана
+const uint32_t reconnectInterval = 30 * 1000; // Интервал повторной попытки подключения к Wi-Fi (30 секунд)
 
 /**
  * @section DISPLAY_BRIGHTNESS_SETTINGS
@@ -259,56 +265,71 @@ void fetch_weather() {
 // =============================================================================
 
 /**
- * @brief Обновление данных в элементах SquareLine UI
+ * @brief Обновление данных в элементах SquareLine UI.
  */
 void update_ui_elements() {
   struct tm timeinfo;
   static char buf_tmp[32];
   static int last_drawn_min = -1;
-  static int last_drawn_day = -1; // Храним день последней отрисовки
+  static int last_drawn_day = -1; 
 
+  // Попытка получения локального времени из системного стека
   if (getLocalTime(&timeinfo)) {
-    // 1. Проверка смены минуты (для времени)
+    
+    // Выполнение логики только при смене минуты для минимизации нагрузки на CPU
     if (timeinfo.tm_min != last_drawn_min) {
 
-      // Сначала проверяем и устанавливаем яркость (Night Mode Logic)
+      // Инкапсуляция логики управления яркостью (Night Mode)
       check_brightness(&timeinfo);
 
-      // Обновляем время
+      // Форматирование и вывод текущего времени
       strftime(buf_tmp, sizeof(buf_tmp), "%H:%M", &timeinfo);
+      /**
+       * lv_label_set_text выполняет внутреннюю проверку на идентичность строк.
+       * Инвалидация объекта произойдет только при фактическом изменении текста.
+       */
       lv_label_set_text(ui_uiLabelTime1, buf_tmp);
-      lv_obj_invalidate(ui_uiLabelTime1);
 
-      // 2. Проверка смены дня (для даты и календаря)
+      // Логика обновления данных, зависящих от даты
       if (timeinfo.tm_mday != last_drawn_day) {
-        // Лог на английском
         logInfo("Date updated: %d.%02d", timeinfo.tm_mday, timeinfo.tm_mon + 1);
 
+        // Форматирование полной даты
         strftime(buf_tmp, sizeof(buf_tmp), "%d.%m.%Y", &timeinfo);
         lv_label_set_text(ui_uiLabelDate1, buf_tmp);
 
+        // Установка дня недели из локализованного массива
         lv_label_set_text(ui_uiLabelDay1, days_ru[timeinfo.tm_wday]);
 
-        lv_obj_invalidate(lv_scr_act());
-
         last_drawn_day = timeinfo.tm_mday;
+        
+        // Инвалидация всего экрана необходима только при глобальной смене даты
+        lv_obj_invalidate(lv_scr_act());
       }
 
-      // Лог на английском
       logInfo("UI Updated for: %s", buf_tmp);
 
-      // --- Погода ---
-      // Возвращаем вывод температуры, влажности и давления в этот блок
+      // Обновление метеоданных: Температура, Влажность, Давление
+      // Использование dtostrf для корректного преобразования float
+      /**
+       * Использование статического буфера buf_tmp здесь безопасно, 
+       * так как данные записываются в виджеты последовательно до выхода из контекста функции.
+       */
       dtostrf(current_temp, 4, 1, buf_tmp);
       lv_label_set_text_fmt(ui_uiLabelTemp1, "%s °C", buf_tmp);
       lv_label_set_text_fmt(ui_uiLabelHumidity1, "%d %%", current_humidity);
       lv_label_set_text_fmt(ui_uiLabelPressure1, "%d mm", current_pressure);
 
-      // Принудительная отрисовка изменений
+      // Принудительный запуск цикла отрисовки LVGL для немедленного отображения изменений
+      /**
+       * lv_refr_now гарантирует, что пользователь увидит обновление 
+       * времени и погоды одновременно, исключая разрыв кадров между обновлением разных меток.
+       */
       lv_refr_now(NULL);
       last_drawn_min = timeinfo.tm_min;
     }
   } else {
+    // Регистрация сбоя получения времени (вероятная проблема синхронизации NTP)
     logInfo("Time error: getLocalTime failed");
   }
 }
@@ -351,6 +372,71 @@ void check_brightness(struct tm *timeinfo) {
 
     logInfo("[SYSTEM] Brightness updated to %d (Mode: %s)\n",
                   targetBrightness, isNight ? "NIGHT" : "DAY");
+  }
+}
+
+/**
+ * @brief Проверка статуса Wi-Fi и управление индикатором.
+ */
+void handle_wifi_status() {
+  int current_wifi_status = WiFi.status();
+  if (current_wifi_status != last_wifi_status) {
+
+    // Визуальное обновление статуса Wi-Fi в интерфейсе (зеленый для подключения, красный для отключения)
+    if (current_wifi_status == WL_CONNECTED) {
+      lv_obj_set_style_bg_color(ui_WiFiStatus, lv_color_hex(0x02C112), LV_PART_MAIN | LV_STATE_DEFAULT);
+      logInfo("WiFi Status: Connected. Indicator Green.");
+    } else {
+      lv_obj_set_style_bg_color(ui_WiFiStatus, lv_color_hex(0xFF0000), LV_PART_MAIN | LV_STATE_DEFAULT);
+      logInfo("WiFi Status: Disconnected. Indicator Red.");
+    }
+
+    /**
+     * Принудительное обновление интерфейса при смене статуса сети,
+     * чтобы индикатор изменился мгновенно, не дожидаясь начала новой минуты.
+     */
+    update_ui_elements();
+    last_wifi_status = current_wifi_status;
+  }
+}
+
+/**
+ * @brief Обработка сетевых задач: погода и переподключение.
+ */
+void handle_network_tasks(uint32_t now, int current_wifi_status) {
+  /**
+   * Разграничение логики работы устройства в зависимости от статуса соединения.
+   * Использование вложенных условий исключает избыточные проверки 
+   * и гарантирует атомарность выполнения операций в рамках одного состояния.
+   */
+  if (!isConfigMode) {
+    if (current_wifi_status == WL_CONNECTED) {
+      // Если Wi-Fi подключен — здесь может работать ваша основная логика
+      
+      // Данные: Запрос погоды по заданному интервалу
+      if (now - lastWeatherCheck > weatherInterval) {
+        fetch_weather();
+
+        //Обновляем экран сразу после получения новых данных о погоде.
+        update_ui_elements();
+        lastWeatherCheck = now;
+      }
+      
+      // Здесь можно вызвать syncTime() или другие сетевые службы
+    } 
+    else {
+      // Логика автоматического переподключения
+      /**
+       * Если соединение потеряно и мы не в режиме AP, инициируем попытку 
+       * переподключения по неблокирующему таймеру. Использование WiFi.begin() без параметров 
+       * заставляет ESP использовать последние сохраненные учетные данные из Flash-памяти.
+       */
+      if (now - lastReconnectAttempt > reconnectInterval) {
+        logInfo("Attempting to reconnect to WiFi...");
+        WiFi.begin(); // Использует сохраненные SSID и пароль
+        lastReconnectAttempt = now;
+      }
+    }
   }
 }
 
@@ -539,24 +625,36 @@ void loop() {
   // Сервер: Обработка запросов веб-интерфейса настроек
   server.handleClient();
 
-  // Графика: Вызов обработчика таймеров и отрисовки LVGL
-  lv_timer_handler();
+  // Если активен режим настройки — работает эта функция
+  handleConfigMode();
 
-  // Берем время
+  // Получаем текущее системное время в миллисекундах для неблокирующих таймеров
   uint32_t now = millis(); 
-  // Интерфейс: Обновление времени/даты раз в секунду
+
+  // Проверка статуса Wi-Fi и управление индикатором
+  handle_wifi_status();
+
+  // Выполнение сетевых задач (погода, реконнект)
+  /**
+   * Передаем текущий статус и время в функцию задач, чтобы не вызывать 
+   * WiFi.status() повторно, экономя ресурсы.
+   */
+  handle_network_tasks(now, last_wifi_status);
+
+/**
+   * Интерфейс: Опрос системного времени каждую секунду.
+   * Мы сохраняем частоту опроса в 1с, чтобы гарантировать точность часов 
+   * до секунды, но сама функция update_ui_elements внутри себя выполнит 
+   * отрисовку (lv_label_set_text) только при фактической смене минуты.
+   */
   if (now - lastUpdateTime > 1000) {
     update_ui_elements();
     lastUpdateTime = now;
   }
 
-  // Данные: Запрос погоды по заданному интервалу
-  if (now - lastWeatherCheck > weatherInterval) {
-    fetch_weather();
-    lastWeatherCheck = now;
-  }
+  // Графика: Вызов обработчика таймеров и отрисовки LVGL
+  lv_timer_handler();
 
-  // Система: Маленькая пауза для стабильности Wi-Fi стека и разгрузки
-  // процессора
+  // Система: Маленькая пауза для стабильности Wi-Fi стека и разгрузки процессора
   delay(5);
 }
