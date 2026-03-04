@@ -189,15 +189,67 @@ void generateAPName() {
 }
 
 /**
- * @brief Сканирует WiFi эфир и формирует список HTML-опций.
+ * @brief Вспомогательная функция для сборки HTML-списка из результатов сканирования.
+ * @param n Количество найденных сетей.
  */
-String scanNetworks() {
-  int n = WiFi.scanNetworks();
+String buildNetworkList(int n) {
+  if (n <= 0) return "<option value=''>Сети не найдены/</option>";
+  
   String list = "";
   for (int i = 0; i < n; ++i) {
+    /**
+     * Формируем строку выбора: SSID и уровень сигнала в дБм.
+     * Используем локальные переменные для ускорения сборки строки.
+     */
     list += "<option value='" + WiFi.SSID(i) + "'>" + WiFi.SSID(i) + " (" +
             String(WiFi.RSSI(i)) + " dBm)</option>";
   }
+  return list;
+}
+
+/**
+ * @brief Формирует список HTML-опций на основе последнего сканирования (асинхронно).
+ * Исключает блокировку основного цикла (loop).
+ */
+String getCachedNetworks() {
+  // Проверяем текущий статус сканера
+  int n = WiFi.scanComplete(); 
+
+  if (n == -2) {
+    /**
+     * Сканирование еще не инициировано. Запускаем в фоновом режиме (async = true).
+     * Это не остановит выполнение кода и часов.
+     */
+    WiFi.scanNetworks(true); 
+    return "<option>Сканирование начато...</option>";
+  }
+  
+  if (n == -1) {
+    // Сканирование в процессе выполнения
+    return "<option>Поиск сетей (обновите позже)...</option>";
+  }
+
+  // Если n >= 0, значит данные в кэше готовы
+  String list = buildNetworkList(n);
+  
+  /**
+   * Очищаем результаты сканирования из памяти после сборки списка,
+   * чтобы при следующем вызове запустить поиск заново.
+   */
+  WiFi.scanDelete(); 
+  WiFi.scanNetworks(true); 
+  
+  return list;
+}
+
+/**
+ * @brief Старая версия для совместимости (если нужна блокирующая работа).
+ */
+String scanNetworks() {
+  // Выполняем синхронное сканирование (блокирует loop до завершения)
+  int n = WiFi.scanNetworks();
+  String list = buildNetworkList(n);
+  WiFi.scanDelete();
   return list;
 }
 
@@ -266,7 +318,7 @@ void setupWebHandlers() {
    */
   server.on("/", HTTP_GET, []() {
     server.send(200, "text/html",
-                getIndexPage(scanNetworks(), ssid, dayBrightness,
+                getIndexPage(getCachedNetworks(), ssid, dayBrightness,
                              nightBrightness, nightStartHour, nightEndHour,
                              String(weather_city), getCitiesJson()));
   });
@@ -363,9 +415,12 @@ void handleConfigMode() {
         uint32_t s = remaining % 60;
 
         char msg[128];
+        // snprintf(msg, sizeof(msg), 
+        //          "НАСТРОЙКА\nСеть: %s\nIP: 192.168.4.1\nПерезагрузка через %u сек\n(%u:%02u)", 
+        //          apName.c_str(), remaining, m, s);
         snprintf(msg, sizeof(msg), 
-                 "НАСТРОЙКА\nСеть: %s\nIP: 192.168.4.1\nПерезагрузка через %u сек\n(%u:%02u)", 
-                 apName.c_str(), remaining, m, s);
+                 "НАСТРОЙКА\nСеть: %s\nIP: 192.168.4.1\n\nПерезагрузка через\n%u:%02u", 
+                 apName.c_str(), m, s);
         update_screen_status(msg);
     }
 
