@@ -23,8 +23,8 @@ SET(SOURCES ui_Screen1.c
     ui_img_11_64_png.c
     fonts/ui_font_dsdigital128.c
     fonts/ui_font_dsdigital48.c
-    fonts/ui_font_roboto30.c
+    fonts/ui_font_roboto20.c
     fonts/ui_font_roboto36.c
-    fonts/ui_font_roboto20.c)
+    fonts/ui_font_roboto32.c)
 
 add_library(ui ${SOURCES})

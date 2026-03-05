@@ -47,9 +47,9 @@ LV_IMG_DECLARE( ui_img_11_64_png);   // assets/11_64.png
 // FONTS
 LV_FONT_DECLARE( ui_font_dsdigital128);
 LV_FONT_DECLARE( ui_font_dsdigital48);
-LV_FONT_DECLARE( ui_font_roboto30);
-LV_FONT_DECLARE( ui_font_roboto36);
 LV_FONT_DECLARE( ui_font_roboto20);
+LV_FONT_DECLARE( ui_font_roboto36);
+LV_FONT_DECLARE( ui_font_roboto32);
 
 // UI INIT
 void ui_init(void);

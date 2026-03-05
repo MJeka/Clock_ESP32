@@ -40,7 +40,7 @@ uint32_t lastReconnectAttempt = 0; // Время последней попытк
 // =============================================================================
 unsigned long lastUpdateTime = 0;
 unsigned long lastWeatherCheck = 0;
-const unsigned long weatherInterval = 30 * 60 * 1000; // 30 мин * 60 сек * 1000 мс = 1 800 000 мс
+const unsigned long weatherInterval = 15 * 60 * 1000; // 15 мин * 60 сек * 1000 мс = 900 000 мс
 uint32_t configTimeout = 15 * 60 * 1000;  // Таймер автоперезагрузки в режиме точки доступа 15 мин * 60 сек * 1000 мс = 900 000 мс
 bool isConfigMode = false;    // Флаг активного режима настройки
 uint32_t configStartTime = 0; // Время запуска режима AP
