@@ -89,7 +89,7 @@ void show_ota_layer() {
   if (load_label == nullptr) {
     load_label = lv_label_create(top_layer);
     lv_obj_set_style_text_color(load_label, lv_color_hex(0xFFFFFF), 0);
-    lv_obj_set_style_text_font(load_label, &ui_font_roboto24, 0);
+    lv_obj_set_style_text_font(load_label, &ui_font_roboto20, 0);
     lv_obj_set_style_text_align(load_label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_align(load_label, LV_ALIGN_CENTER, 0, 0);
   }

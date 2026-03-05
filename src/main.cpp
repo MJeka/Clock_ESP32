@@ -65,7 +65,7 @@ int nightEndHour = 7;     /**< Час возврата в дневной реж�
 // Состояние погоды
 float current_temp = 0.0;
 int current_humidity = 0;
-int current_pressure = 0;
+// int current_pressure = 0;
 
 // Локализация
 const char *days_ru[] = {"ВС", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"};
@@ -236,8 +236,8 @@ void fetch_weather() {
         // Извлечение основных метеоданных
         current_temp = doc["main"]["temp"];
         current_humidity = doc["main"]["humidity"];
-        current_pressure = (int)doc["main"]["pressure"] *
-                           0.750062; // Конвертация hPa в мм рт. ст.
+        // current_pressure = (int)doc["main"]["pressure"] *
+        //                    0.750062; // Конвертация hPa в мм рт. ст.
 
         // Извлечение кода иконки (например, "01d", "02n")
         const char *icon_code = doc["weather"][0]["icon"];
@@ -245,9 +245,12 @@ void fetch_weather() {
           update_weather_icon(icon_code);
         } 
 
-        logInfo("Weather updated: %.1f C, Hum: %d%%, Pres: %d mm, Icon: %s",
-                current_temp, current_humidity, current_pressure,
+        logInfo("Weather updated: %.1f C, Hum: %d%%, Icon: %s",
+                current_temp, current_humidity,
                 icon_code ? icon_code : "N/A");
+        // logInfo("Weather updated: %.1f C, Hum: %d%%, Pres: %d mm, Icon: %s",
+        //         current_temp, current_humidity, current_pressure,
+        //         icon_code ? icon_code : "N/A");
       } else {
         logInfo("Weather error: 'main' block missing in JSON");
       }
@@ -318,7 +321,7 @@ void update_ui_elements() {
       dtostrf(current_temp, 4, 1, buf_tmp);
       lv_label_set_text_fmt(ui_uiLabelTemp1, "%s °C", buf_tmp);
       lv_label_set_text_fmt(ui_uiLabelHumidity1, "%d %%", current_humidity);
-      lv_label_set_text_fmt(ui_uiLabelPressure1, "%d mm", current_pressure);
+      // lv_label_set_text_fmt(ui_uiLabelPressure1, "%d mm", current_pressure);
 
       // Принудительный запуск цикла отрисовки LVGL для немедленного отображения изменений
       /**
@@ -492,7 +495,7 @@ void create_boot_screen() {
 
   load_label = lv_label_create(top_layer);
   lv_obj_set_style_text_color(load_label, lv_color_hex(0xFFFFFF), 0);
-  lv_obj_set_style_text_font(load_label, &ui_font_roboto24, 0);
+  lv_obj_set_style_text_font(load_label, &ui_font_roboto20, 0);
   lv_obj_set_style_text_align(load_label, LV_TEXT_ALIGN_CENTER, 0);
   lv_obj_align(load_label, LV_ALIGN_CENTER, 0, 0);
 }

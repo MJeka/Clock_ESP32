@@ -1,10 +1,10 @@
 {
-  "codename": "roboto24",
+  "codename": "roboto30",
   "ttf_path": "/assets/Roboto-Bold.ttf",
-  "bin_path": "/assets/ui_font_roboto24.bin",
-  "c_path": "/assets/ui_font_roboto24.c",
-  "cfg_path": "/assets/ui_font_roboto24.fcfg",
-  "size": 24,
+  "bin_path": "/assets/ui_font_roboto30.bin",
+  "c_path": "/assets/ui_font_roboto30.c",
+  "cfg_path": "/assets/ui_font_roboto30.fcfg",
+  "size": 30,
   "bpp": 4,
   "letters": 0,
   "ranges": [

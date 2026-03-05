@@ -2,9 +2,8 @@ ui_Screen1.c
 ui.c
 ui_comp_hook.c
 ui_helpers.c
-ui_img_1605233879.c
-ui_img_1620110196.c
-ui_img_463316836.c
+ui_img_thermometer_30_png.c
+ui_img_1191103926.c
 ui_img_01d_64_png.c
 ui_img_01n_64_png.c
 ui_img_02d_64_png.c
@@ -23,7 +22,7 @@ ui_img_10_64_png.c
 ui_img_13_64_png.c
 ui_img_11_64_png.c
 fonts/ui_font_dsdigital128.c
-fonts/ui_font_dsdigital40.c
 fonts/ui_font_dsdigital48.c
-fonts/ui_font_roboto24.c
+fonts/ui_font_roboto30.c
 fonts/ui_font_roboto36.c
+fonts/ui_font_roboto20.c
