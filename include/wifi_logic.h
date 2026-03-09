@@ -1,8 +1,9 @@
 #ifndef WIFI_LOGIC_H
 #define WIFI_LOGIC_H
 
-#include "web_pages.h" // Шаблоны веб-интерфейса (HTML/CSS компоненты)
 #include "cities_db.h" // Локальная база городов Украины и мира (PROGMEM)
+#include "web_pages.h" // Шаблоны веб-интерфейса (HTML/CSS компоненты)
+#include <Arduino.h>
 #include <ArduinoOTA.h> // Протокол беспроводной прошивки (обновление кода через Wi-Fi без USB)
 #include <DNSServer.h> // DNS-сервер для Captive Portal (перенаправление на страницу настроек)
 #include <FS.h> // Абстрактный слой файловой системы (интерфейс доступа к Flash-памяти)
@@ -10,6 +11,8 @@
 #include <WebServer.h> // Реализация HTTP-сервера (обработка GET/POST запросов веб-интерфейса)
 #include <WiFi.h> // Сетевой стек 802.11 (управление радиомодулем, режимы STA и AP)
 #include <lvgl.h> // Движок графического интерфейса пользователя (UI Engine)
+#include <pgmspace.h>
+#include <string.h>
 
 // =============================================================================
 // ВНЕШНИЕ ССЫЛКИ (EXTERN)
@@ -20,6 +23,8 @@ extern Preferences preferences;
 extern char ssid[32];
 extern char password[64];
 extern char weather_city[64];
+extern float weather_lat;
+extern float weather_lon;
 extern String apName;
 extern lv_obj_t *load_label;
 
@@ -29,6 +34,7 @@ extern int nightStartHour;
 extern int nightEndHour;
 extern void check_brightness(struct tm *timeinfo = nullptr);
 extern void fetch_weather();
+extern void update_ui_elements(bool force = false);
 extern uint32_t configTimeout;
 extern bool isConfigMode;
 extern uint32_t configStartTime;
@@ -79,12 +85,12 @@ void update_screen_status(const char *txt) {
  */
 void show_ota_layer() {
   lv_obj_t *top_layer = lv_layer_top();
-  
+
   // Делаем слой видимым и непрозрачным
   lv_obj_clear_flag(top_layer, LV_OBJ_FLAG_HIDDEN);
   lv_obj_set_style_bg_opa(top_layer, LV_OPA_COVER, 0);
   lv_obj_set_style_bg_color(top_layer, lv_color_hex(0x000000), 0);
-  
+
   // Воссоздаем текстовую метку, если она была удалена после инициализации
   if (load_label == nullptr) {
     load_label = lv_label_create(top_layer);
@@ -128,16 +134,16 @@ void setupOTA() {
       type = "sketch"; // Обновление программы (кода)
     else
       type = "filesystem"; // Обновление файловой системы (SPIFFS/LittleFS)
-    
+
     show_ota_layer(); // Активация черного экрана заставки
     update_ota_status("Обновление...", 0);
     logInfo("OTA: Начало загрузки %s", type.c_str());
   });
 
   // 4. Обработчик события: Завершение прошивки
-  ArduinoOTA.onEnd([]() { 
+  ArduinoOTA.onEnd([]() {
     update_ota_status("Готово!\nПерезагрузка", 100);
-    logInfo("OTA: Обновление успешно завершено"); 
+    logInfo("OTA: Обновление успешно завершено");
   });
 
   // 5. Обработчик события: Визуализация прогресса (вывод % на дисплей и в Serial)
@@ -150,7 +156,7 @@ void setupOTA() {
   // 6. Обработчик события: Возникновение критической ошибки
   ArduinoOTA.onError([](ota_error_t error) {
     char err_buf[64];
-    const char* err_desc = "Ошибка";
+    const char *err_desc = "Ошибка";
 
     if (error == OTA_AUTH_ERROR) err_desc = "Отказ в авторизации";
     else if (error == OTA_BEGIN_ERROR) err_desc = "Сбой инициализации";
@@ -163,7 +169,7 @@ void setupOTA() {
     logInfo("OTA: %s [%u]", err_desc, error);
 
     // Пауза перед скрытием слоя ошибки, чтобы пользователь успел прочитать текст
-    delay(3000); 
+    delay(3000);
     lv_obj_add_flag(lv_layer_top(), LV_OBJ_FLAG_HIDDEN);
   });
 
@@ -193,8 +199,9 @@ void generateAPName() {
  * @param n Количество найденных сетей.
  */
 String buildNetworkList(int n) {
-  if (n <= 0) return "<option value=''>Сети не найдены/</option>";
-  
+  if (n <= 0)
+    return "<option value=''>Сети не найдены/</option>";
+
   String list = "";
   for (int i = 0; i < n; ++i) {
     /**
@@ -213,17 +220,17 @@ String buildNetworkList(int n) {
  */
 String getCachedNetworks() {
   // Проверяем текущий статус сканера
-  int n = WiFi.scanComplete(); 
+  int n = WiFi.scanComplete();
 
   if (n == -2) {
     /**
      * Сканирование еще не инициировано. Запускаем в фоновом режиме (async = true).
      * Это не остановит выполнение кода и часов.
      */
-    WiFi.scanNetworks(true); 
+    WiFi.scanNetworks(true);
     return "<option>Сканирование начато...</option>";
   }
-  
+
   if (n == -1) {
     // Сканирование в процессе выполнения
     return "<option>Поиск сетей (подождите)...</option>";
@@ -275,23 +282,52 @@ void handleSaveSettings() {
      * поэтому дополнительная сложная валидация (проверка запятых) не требуется.
      */
     if (server.hasArg("city")) {
-      String newCity = server.arg("city");
-      newCity.trim();
-      if (newCity.length() > 0) {
-        strlcpy(weather_city, newCity.c_str(), sizeof(weather_city));
-        preferences.putString("city", newCity);
+      String cityData = server.arg("city");
+      cityData.trim();
+      logInfo("RAW CITY DATA RECEIVED: '%s'", cityData.c_str());
+      if (cityData.length() > 0) {
+        float oldLat = weather_lat;
+        float oldLon = weather_lon;
+
+        // Парсинг формата Имя,Страна,Lat,Lon
+        int firstComma = cityData.indexOf(',');
+        int secondComma = cityData.indexOf(',', firstComma + 1);
+        int thirdComma = cityData.indexOf(',', secondComma + 1);
+
+        if (firstComma > 0 && secondComma > 0 && thirdComma > 0) {
+          String cityName =
+              cityData.substring(0, secondComma); // Сохраняем "Имя,Страна"
+          String latStr = cityData.substring(secondComma + 1, thirdComma);
+          String lonStr = cityData.substring(thirdComma + 1);
+
+          weather_lat = latStr.toFloat();
+          weather_lon = lonStr.toFloat();
+          strlcpy(weather_city, cityName.c_str(), sizeof(weather_city));
+
+          preferences.putString("city", cityName);
+          preferences.putFloat("lat", weather_lat);
+          preferences.putFloat("lon", weather_lon);
+        } else {
+          // Выпадающий список не использовался или формат старый
+          strlcpy(weather_city, cityData.c_str(), sizeof(weather_city));
+          preferences.putString("city", cityData);
+          // Координаты при ручном вводе не меняем, чтобы не сбросить на 0
+        }
+
+        // Если город или координаты изменились — немедленный запрос новых
+        // метеоданных
+        if (oldCity != String(weather_city) || oldLat != weather_lat ||
+            oldLon != weather_lon) {
+          logInfo("Location changed to %s (%.4f, %.4f). Updating weather...",
+                  weather_city, weather_lat, weather_lon);
+          fetch_weather();
+          update_ui_elements(true); // Принудительно обновляем экран
+        }
       }
     }
 
     preferences.end();
     check_brightness(); // Обновление яркости
-
-    // Если город изменился — немедленный запрос новых метеоданных
-    if (oldCity != String(weather_city)) {
-      logInfo("City changed from %s to %s. Updating weather...",
-              oldCity.c_str(), weather_city);
-      fetch_weather();
-    }
 
     logInfo("Device settings saved. City: %s", weather_city);
     server.sendHeader("Location", "/");
@@ -415,56 +451,58 @@ void setupWebHandlers() {
  * @brief Запуск точки доступа и цикл обработки запросов (режим настройки).
  */
 void startConfigMode() {
-    WiFi.mode(WIFI_AP);
-    WiFi.softAP(apName.c_str());
-    
-    // Сразу инициируем первое сканирование, чтобы к открытию страницы был кэш
-    WiFi.scanNetworks(true);
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(apName.c_str());
 
-    dnsServer.start(53, "*", WiFi.softAPIP());
-    server.begin();
+  // Сразу инициируем первое сканирование, чтобы к открытию страницы был кэш
+  WiFi.scanNetworks(true);
 
-    configStartTime = millis(); // Засекаем время старта
-    isConfigMode = true;        // Активируем флаг режима настройки
-    
-    logInfo("Config mode initialized via AP: %s", apName.c_str());
+  dnsServer.start(53, "*", WiFi.softAPIP());
+  server.begin();
+
+  configStartTime = millis(); // Засекаем время старта
+  isConfigMode = true;        // Активируем флаг режима настройки
+
+  logInfo("Config mode initialized via AP: %s", apName.c_str());
 }
 
 /**
  * @brief Обработка логики конфигурирования и таймера перезагрузки.
  */
 void handleConfigMode() {
-    if (!isConfigMode) return; // Если мы не в режиме настройки — выходим
+  if (!isConfigMode)
+    return; // Если мы не в режиме настройки — выходим
 
-    uint32_t currentMillis = millis();
-    uint32_t elapsed = currentMillis - configStartTime;
+  uint32_t currentMillis = millis();
+  uint32_t elapsed = currentMillis - configStartTime;
 
-    // Проверка таймаута
-    if (elapsed >= configTimeout) {
-        logInfo("Timeout. Restarting...");
-        update_screen_status("Время вышло!\nПерезагрузка...");
-        delay(2000);
-        ESP.restart();
-    }
+  // Проверка таймаута
+  if (elapsed >= configTimeout) {
+    logInfo("Timeout. Restarting...");
+    update_screen_status("Время вышло!\nПерезагрузка...");
+    delay(2000);
+    ESP.restart();
+  }
 
-    // Обновление экрана раз в секунду
-    if (currentMillis - lastDisplayUpdate >= 1000) {
-        lastDisplayUpdate = currentMillis;
+  // Обновление экрана раз в секунду
+  if (currentMillis - lastDisplayUpdate >= 1000) {
+    lastDisplayUpdate = currentMillis;
 
-        uint32_t remaining = (configTimeout - elapsed) / 1000;
-        uint32_t m = remaining / 60;
-        uint32_t s = remaining % 60;
+    uint32_t remaining = (configTimeout - elapsed) / 1000;
+    uint32_t m = remaining / 60;
+    uint32_t s = remaining % 60;
 
-        char msg[128];
-        snprintf(msg, sizeof(msg), 
-                 "НАСТРОЙКА\nСеть: %s\nIP: 192.168.4.1\n\nПерезагрузка через\n%u:%02u", 
-                 apName.c_str(), m, s);
-        update_screen_status(msg);
-    }
+    char msg[128];
+    snprintf(
+        msg, sizeof(msg),
+        "НАСТРОЙКА\nСеть: %s\nIP: 192.168.4.1\n\nПерезагрузка через\n%u:%02u",
+        apName.c_str(), m, s);
+    update_screen_status(msg);
+  }
 
-    // 3. Обслуживание сетевых сервисов
-    dnsServer.processNextRequest();
-    server.handleClient();
+  // 3. Обслуживание сетевых сервисов
+  dnsServer.processNextRequest();
+  server.handleClient();
 }
 
 #endif // WIFI_LOGIC_H

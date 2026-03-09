@@ -1,3 +1,4 @@
+#include "cities_db.h" // Компактная база городов для автодополнения (хранится в Flash-памяти)
 #include "secrets.h" // Конфиденциальные данные и макроопределения (API-ключи, адреса NTP)
 #include "ui.h" // Объявления объектов графического интерфейса (экспорт из SquareLine Studio)
 #include "wifi_logic.h" // Логика сетевых подключений и обработчиков веб-сервера
@@ -8,13 +9,13 @@
 #include <TFT_eSPI.h> // Графический драйвер нижнего уровня (инициализация и управление дисплеем)
 #include <WiFi.h> // Сетевой стек 802.11 (управление радиомодулем, режимы STA и AP)
 #include <lvgl.h> // Движок графического интерфейса пользователя (UI Engine)
-#include "cities_db.h" // Компактная база городов для автодополнения (хранится в Flash-памяти)
 
 // =============================================================================
 // ПРОТОТИПЫ ФУНКЦИЙ
 // =============================================================================
-void update_ui_elements(); 
-void update_weather_icon(const char *icon_code);
+// void update_ui_elements(bool force = false); // Удалено, так как объявлено в
+// wifi_logic.h
+void update_weather_icon(int wmo_code, int is_day);
 
 // =============================================================================
 // ГЛОБАЛЬНЫЕ ОБЪЕКТЫ
@@ -52,8 +53,7 @@ const uint32_t reconnectInterval = 30 * 1000; // Интервал повторн
  * Конфигурация управления яркостью дисплея и параметры ночного режима.
  */
 const uint8_t ledPin = 22; /**< Пин управления подсветкой (PWM) */
-const uint32_t ledFreq =
-    5000; /**< Частота ШИМ (5 кГц достаточно для отсутствия мерцания) */
+const uint32_t ledFreq = 5000; /**< Частота ШИМ (5 кГц достаточно для отсутствия мерцания) */
 const uint8_t ledRes = 8; /**< Разрядность ШИМ (8 бит: 0-255) */
 
 // Параметры режима (будут загружаться из Preferences)
@@ -66,12 +66,11 @@ int nightEndHour = 7;     /**< Час возврата в дневной реж�
 float current_temp = 0.0;
 int current_humidity = 0;
 int current_pressure = 0;
+float weather_lat = 50.4501; // По умолчанию Киева
+float weather_lon = 30.5234;
 
 // Локализация
 const char *days_ru[] = {"ВС", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"};
-const char *months_ru[] = {"января",   "февраля", "марта",  "апреля",
-                           "мая",      "июня",    "июля",   "августа",
-                           "сентября", "октября", "ноября", "декабря"};
 
 static lv_disp_draw_buf_t draw_buf;
 // reduce draw buffer height to save DRAM (was 30 rows)
@@ -86,55 +85,40 @@ static lv_color_t buf[320 * 20];
 // =============================================================================
 
 /**
- * @brief Структура для сопоставления текстового кода API с ресурсом LVGL.
+ * @brief Структура для сопоставления WMO кода API с ресурсом LVGL.
  */
 struct WeatherIconMap {
-  const char *code;        // ID иконки (например, "01d")
-  const lv_img_dsc_t *img; // Указатель на структуру изображения из ui.h
+  int code;                      // WMO Weather Code
+  const lv_img_dsc_t *day_img;   // Указатель на дневную иконку
+  const lv_img_dsc_t *night_img; // Указатель на ночную иконку
 };
 
 /**
- * @brief Карта соответствия всех иконок OpenWeather и сгенерированных
- * SquareLine имен. Мы используем указатели (&), чтобы не копировать тяжелые
- * данные, а просто ссылаться на них.
+ * @brief Карта соответствия кодов Open-Meteo (WMO) и иконок.
+ * Используются раздельные указатели для дневного и ночного режимов.
  */
 const WeatherIconMap weather_icons[] = {
-    {"01d", &ui_img_01d_64_png}, // Ясно (день)
-    {"01n", &ui_img_01n_64_png}, // Ясно (ночь)
-    {"02d", &ui_img_02d_64_png}, // Малооблачно (день)
-    {"02n", &ui_img_02n_64_png}, // Малооблачно (ночь)
-    {"03d", &ui_img_03d_64_png}, // Облачно (день)
-    {"03n", &ui_img_03d_64_png}, // Облачно (ночь)
-    {"04d", &ui_img_04d_64_png}, // Пасмурно (день)
-    {"04n", &ui_img_04d_64_png}, // Пасмурно (ночь)
-    {"09d", &ui_img_09d_64_png}, // Ливень (день)
-    {"09n", &ui_img_09d_64_png}, // Ливень (ночь)
-    {"10d", &ui_img_10_64_png}, // Дождь (день)
-    {"10n", &ui_img_10_64_png}, // Дождь (ночь)
-    {"11d", &ui_img_11_64_png}, // Гроза (день)
-    {"11n", &ui_img_11_64_png}, // Гроза (ночь)
-    {"13d", &ui_img_13_64_png}, // Снег (день)
-    {"13n", &ui_img_13_64_png}, // Снег (ночь)
-    {"50d", &ui_img_50d_64_png}, // Туман (день)
-    {"50n", &ui_img_50d_64_png}   // Туман (ночь)
-    // {"01d", &ui_img_1700430416}, // Ясно (день)
-    // {"01n", &ui_img_1232099950}, // Ясно (ночь)
-    // {"02d", &ui_img_1706357903}, // Малооблачно (день)
-    // {"02n", &ui_img_1238027437}, // Малооблачно (ночь)
-    // {"03d", &ui_img_1707406414}, // Облачно (день)
-    // {"03n", &ui_img_1239075948}, // Облачно (ночь)
-    // {"04d", &ui_img_1694638229}, // Пасмурно (день)
-    // {"04n", &ui_img_1226307763}, // Пасмурно (ночь)
-    // {"09d", &ui_img_1690960472}, // Ливень (день)
-    // {"09n", &ui_img_1222630006}, // Ливень (ночь)
-    // {"10d", &ui_img_1131223562}, // Дождь (день)
-    // {"10n", &ui_img_1599554028}, // Дождь (ночь)
-    // {"11d", &ui_img_1130175051}, // Гроза (день)
-    // {"11n", &ui_img_1598505517}, // Гроза (ночь)
-    // {"13d", &ui_img_1123199053}, // Снег (день)
-    // {"13n", &ui_img_1591529519}, // Снег (ночь)
-    // {"50d", &ui_img_1308932194}, // Туман (день)
-    // {"50n", &ui_img_840601728}   // Туман (ночь)
+    {0, &ui_img_01d_64_png, &ui_img_01n_64_png},  // Ясно
+    {1, &ui_img_02d_64_png, &ui_img_02n_64_png},  // Преимущественно ясно
+    {2, &ui_img_02d_64_png, &ui_img_02n_64_png},  // Переменная облачность
+    {3, &ui_img_03d_64_png, &ui_img_03d_64_png},  // Пасмурно
+    {45, &ui_img_50d_64_png, &ui_img_50d_64_png}, // Туман
+    {48, &ui_img_50d_64_png, &ui_img_50d_64_png}, // Иней
+    {51, &ui_img_10_64_png, &ui_img_10_64_png},   // Морось слабая
+    {53, &ui_img_10_64_png, &ui_img_10_64_png},   // Морось умеренная
+    {55, &ui_img_10_64_png, &ui_img_10_64_png},   // Морось плотная
+    {61, &ui_img_10_64_png, &ui_img_10_64_png},   // Дождь слабый
+    {63, &ui_img_10_64_png, &ui_img_10_64_png},   // Дождь умеренный
+    {65, &ui_img_10_64_png, &ui_img_10_64_png},   // Дождь сильный
+    {80, &ui_img_09d_64_png, &ui_img_09d_64_png}, // Ливневый дождь слабый
+    {81, &ui_img_09d_64_png, &ui_img_09d_64_png}, // Ливневый дождь умеренный
+    {82, &ui_img_09d_64_png, &ui_img_09d_64_png}, // Ливневый дождь сильный
+    {71, &ui_img_13_64_png, &ui_img_13_64_png},   // Снег слабый
+    {73, &ui_img_13_64_png, &ui_img_13_64_png},   // Снег умеренный
+    {75, &ui_img_13_64_png, &ui_img_13_64_png},   // Снег сильный
+    {95, &ui_img_11_64_png, &ui_img_11_64_png},   // Гроза
+    {96, &ui_img_11_64_png, &ui_img_11_64_png},   // Гроза с градом
+    {99, &ui_img_11_64_png, &ui_img_11_64_png}    // Гроза с сильным градом
 };
 
 // Вычисляем размер массива автоматически, чтобы не хардкодить число иконок
@@ -163,13 +147,14 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area,
 // =============================================================================
 
 /**
- * @brief Обновляет иконку в интерфейсе на основе кода от OpenWeatherMap.
+ * @brief Обновляет иконку в интерфейсе на основе кода от Open-Meteo.
  * Если код не найден в справочнике, иконка скрывается.
- * @param icon_id Строка с кодом, полученная из JSON (например, "04n")
+ * @param wmo_code Код погоды (WMO)
+ * @param is_day Флаг времени суток (1 - день, 0 - ночь)
  */
-void update_weather_icon(const char *icon_id) {
+void update_weather_icon(int wmo_code, int is_day) {
   // Проверка на валидность указателей перед выполнением операций
-  if (icon_id == nullptr || ui_uiLabelWeather == nullptr)
+  if (ui_uiLabelWeather == nullptr)
     return;
 
   // Изначально устанавливаем указатель в nullptr (вместо картинки по умолчанию)
@@ -177,8 +162,9 @@ void update_weather_icon(const char *icon_id) {
 
   // Поиск соответствия в справочнике weather_icons
   for (int i = 0; i < weather_icons_count; i++) {
-    if (strcmp(icon_id, weather_icons[i].code) == 0) {
-      target_img = weather_icons[i].img;
+    if (wmo_code == weather_icons[i].code) {
+      target_img =
+          is_day ? weather_icons[i].day_img : weather_icons[i].night_img;
       break;
     }
   }
@@ -188,26 +174,28 @@ void update_weather_icon(const char *icon_id) {
     // Если иконка найдена, устанавливаем источник и делаем объект видимым
     lv_img_set_src(ui_uiLabelWeather, target_img);
     lv_obj_clear_flag(ui_uiLabelWeather, LV_OBJ_FLAG_HIDDEN);
-    
+
     // Логирование успешной установки
-    logInfo("UI_RENDER: Applied icon source for code: %s\n", icon_id);
+    logInfo("UI_RENDER: Applied icon source for code: %d (Day: %d)\n", wmo_code,
+            is_day);
   } else {
     // Если код не распознан, скрываем объект с экрана
     lv_obj_add_flag(ui_uiLabelWeather, LV_OBJ_FLAG_HIDDEN);
-    
+
     // Логирование отсутствия данных
-    logInfo("UI_RENDER: Icon code %s not found. Hiding object.\n", icon_id);
+    logInfo("UI_RENDER: Weather code %d not found. Hiding object.\n", wmo_code);
   }
 
-  // Тонирование иконки в более теплый цвет (закомментировано, так как требует наличия картинки)
-  // if (target_img != nullptr) {
-  //   lv_obj_set_style_img_recolor(ui_uiLabelWeather, lv_color_hex(0xFFA500), 0); // Оранжевый
-  //   lv_obj_set_style_img_recolor_opa(ui_uiLabelWeather, 120, 0); // Легкое тонирование
+  // Тонирование иконки в более теплый цвет (закомментировано, так как требует
+  // наличия картинки) if (target_img != nullptr) {
+  //   lv_obj_set_style_img_recolor(ui_uiLabelWeather, lv_color_hex(0xFFA500),
+  //   0); // Оранжевый lv_obj_set_style_img_recolor_opa(ui_uiLabelWeather, 120,
+  //   0); // Легкое тонирование
   // }
 }
 
 /**
- * @brief Запрос данных о погоде через OpenWeatherMap API и обновление
+ * @brief Запрос данных о погоде через Open-Meteo API и обновление
  * глобальных переменных.
  */
 void fetch_weather() {
@@ -216,40 +204,43 @@ void fetch_weather() {
     return;
 
   HTTPClient http;
-  // Формирование URL запроса с учетом города, API-ключа и локализации
-  String url = "http://api.openweathermap.org/data/2.5/weather?q=" +
-               String(weather_city) + "&appid=" + String(weatherApiKey) +
-               "&units=metric&lang=ru";
+  // Формирование URL запроса с использованием координат и параметров Open-Meteo
+  String url = "https://api.open-meteo.com/v1/forecast?latitude=" +
+               String(weather_lat, 4) + "&longitude=" + String(weather_lon, 4) +
+               "&current=temperature_2m,relative_humidity_2m,is_day,weather_"
+               "code,surface_pressure&timezone=auto";
 
-  logInfo("Weather update request for %s", weather_city);
-  
+  logInfo("Weather update request for %s (%.4f, %.4f)", weather_city,
+          weather_lat, weather_lon);
+
   http.setTimeout(5000); // Установка таймаута для предотвращения блокировки цикла
   http.begin(url);
 
   int httpCode = http.GET();
   if (httpCode == HTTP_CODE_OK) {
-    StaticJsonDocument<1024> doc;
+    JsonDocument doc;
     DeserializationError error = deserializeJson(doc, http.getString());
 
     if (!error) {
-      if (doc.containsKey("main")) {
-        // Извлечение основных метеоданных
-        current_temp = doc["main"]["temp"];
-        current_humidity = doc["main"]["humidity"];
-        current_pressure = (int)doc["main"]["pressure"] *
-                           0.750062; // Конвертация hPa в мм рт. ст.
+      if (doc.containsKey("current")) {
+        // Извлечение основных метеоданных из блока 'current'
+        current_temp = doc["current"]["temperature_2m"];
+        current_humidity = doc["current"]["relative_humidity_2m"];
+        // Конвертация давления из hPa (Open-Meteo) в мм рт. ст.
+        current_pressure = (float)doc["current"]["surface_pressure"] * 0.750062;
 
-        // Извлечение кода иконки (например, "01d", "02n")
-        const char *icon_code = doc["weather"][0]["icon"];
-        if (icon_code) {
-          update_weather_icon(icon_code);
-        } 
+        // Извлечение WMO кода погоды и флага времени суток
+        int wmo_code = doc["current"]["weather_code"];
+        int is_day = doc["current"]["is_day"];
 
-        logInfo("Weather updated: %.1f C, Hum: %d%%, Pres: %d mm, Icon: %s",
-                current_temp, current_humidity, current_pressure,
-                icon_code ? icon_code : "N/A");
+        update_weather_icon(wmo_code, is_day);
+
+        logInfo("Weather updated: %.1f C, Hum: %d%%, Pres: %d mm, Code: %d, "
+                "IsDay: %d",
+                current_temp, current_humidity, current_pressure, wmo_code,
+                is_day);
       } else {
-        logInfo("Weather error: 'main' block missing in JSON");
+        logInfo("Weather error: 'current' block missing in JSON");
       }
     } else {
       logInfo("Weather error: JSON parse failed (%s)", error.c_str());
@@ -266,18 +257,20 @@ void fetch_weather() {
 
 /**
  * @brief Обновление данных в элементах SquareLine UI.
+ * @param force Если true, обновление выполняется немедленно, игнорируя проверку
+ * минуты.
  */
-void update_ui_elements() {
+void update_ui_elements(bool force) {
   struct tm timeinfo;
   static char buf_tmp[32];
   static int last_drawn_min = -1;
-  static int last_drawn_day = -1; 
+  static int last_drawn_day = -1;
 
   // Попытка получения локального времени из системного стека
   if (getLocalTime(&timeinfo)) {
-    
+
     // Выполнение логики только при смене минуты для минимизации нагрузки на CPU
-    if (timeinfo.tm_min != last_drawn_min) {
+    if (force || timeinfo.tm_min != last_drawn_min) {
 
       // Инкапсуляция логики управления яркостью (Night Mode)
       check_brightness(&timeinfo);
@@ -302,7 +295,7 @@ void update_ui_elements() {
         lv_label_set_text(ui_uiLabelDay1, days_ru[timeinfo.tm_wday]);
 
         last_drawn_day = timeinfo.tm_mday;
-        
+
         // Инвалидация всего экрана необходима только при глобальной смене даты
         lv_obj_invalidate(lv_scr_act());
       }
@@ -312,18 +305,21 @@ void update_ui_elements() {
       // Обновление метеоданных: Температура, Влажность, Давление
       // Использование dtostrf для корректного преобразования float
       /**
-       * Использование статического буфера buf_tmp здесь безопасно, 
-       * так как данные записываются в виджеты последовательно до выхода из контекста функции.
+       * Использование статического буфера buf_tmp здесь безопасно,
+       * так как данные записываются в виджеты последовательно до выхода из
+       * контекста функции.
        */
       dtostrf(current_temp, 4, 1, buf_tmp);
       lv_label_set_text_fmt(ui_uiLabelTemp1, "%s °C", buf_tmp);
       lv_label_set_text_fmt(ui_uiLabelHumidity1, "%d %%", current_humidity);
       lv_label_set_text_fmt(ui_uiLabelPressure1, "%d mm", current_pressure);
 
-      // Принудительный запуск цикла отрисовки LVGL для немедленного отображения изменений
+      // Принудительный запуск цикла отрисовки LVGL для немедленного отображения
+      // изменений
       /**
-       * lv_refr_now гарантирует, что пользователь увидит обновление 
-       * времени и погоды одновременно, исключая разрыв кадров между обновлением разных меток.
+       * lv_refr_now гарантирует, что пользователь увидит обновление
+       * времени и погоды одновременно, исключая разрыв кадров между обновлением
+       * разных меток.
        */
       lv_refr_now(NULL);
       last_drawn_min = timeinfo.tm_min;
@@ -370,8 +366,8 @@ void check_brightness(struct tm *timeinfo) {
     ledcWrite(ledPin, targetBrightness);
     lastAppliedBrightness = targetBrightness;
 
-    logInfo("[SYSTEM] Brightness updated to %d (Mode: %s)\n",
-                  targetBrightness, isNight ? "NIGHT" : "DAY");
+    logInfo("[SYSTEM] Brightness updated to %d (Mode: %s)\n", targetBrightness,
+            isNight ? "NIGHT" : "DAY");
   }
 }
 
@@ -382,12 +378,15 @@ void handle_wifi_status() {
   int current_wifi_status = WiFi.status();
   if (current_wifi_status != last_wifi_status) {
 
-    // Визуальное обновление статуса Wi-Fi в интерфейсе (зеленый для подключения, красный для отключения)
+    // Визуальное обновление статуса Wi-Fi в интерфейсе (зеленый для
+    // подключения, красный для отключения)
     if (current_wifi_status == WL_CONNECTED) {
-      lv_obj_set_style_bg_color(ui_WiFiStatus, lv_color_hex(0x02C112), LV_PART_MAIN | LV_STATE_DEFAULT);
+      lv_obj_set_style_bg_color(ui_WiFiStatus, lv_color_hex(0x02C112),
+                                LV_PART_MAIN | LV_STATE_DEFAULT);
       logInfo("WiFi Status: Connected. Indicator Green.");
     } else {
-      lv_obj_set_style_bg_color(ui_WiFiStatus, lv_color_hex(0xFF0000), LV_PART_MAIN | LV_STATE_DEFAULT);
+      lv_obj_set_style_bg_color(ui_WiFiStatus, lv_color_hex(0xFF0000),
+                                LV_PART_MAIN | LV_STATE_DEFAULT);
       logInfo("WiFi Status: Disconnected. Indicator Red.");
     }
 
@@ -406,30 +405,30 @@ void handle_wifi_status() {
 void handle_network_tasks(uint32_t now, int current_wifi_status) {
   /**
    * Разграничение логики работы устройства в зависимости от статуса соединения.
-   * Использование вложенных условий исключает избыточные проверки 
+   * Использование вложенных условий исключает избыточные проверки
    * и гарантирует атомарность выполнения операций в рамках одного состояния.
    */
   if (!isConfigMode) {
     if (current_wifi_status == WL_CONNECTED) {
       // Если Wi-Fi подключен — здесь может работать ваша основная логика
-      
+
       // Данные: Запрос погоды по заданному интервалу
       if (now - lastWeatherCheck > weatherInterval) {
         fetch_weather();
 
-        //Обновляем экран сразу после получения новых данных о погоде.
+        // Обновляем экран сразу после получения новых данных о погоде.
         update_ui_elements();
         lastWeatherCheck = now;
       }
-      
+
       // Здесь можно вызвать syncTime() или другие сетевые службы
-    } 
-    else {
+    } else {
       // Логика автоматического переподключения
       /**
-       * Если соединение потеряно и мы не в режиме AP, инициируем попытку 
-       * переподключения по неблокирующему таймеру. Использование WiFi.begin() без параметров 
-       * заставляет ESP использовать последние сохраненные учетные данные из Flash-памяти.
+       * Если соединение потеряно и мы не в режиме AP, инициируем попытку
+       * переподключения по неблокирующему таймеру. Использование WiFi.begin()
+       * без параметров заставляет ESP использовать последние сохраненные
+       * учетные данные из Flash-памяти.
        */
       if (now - lastReconnectAttempt > reconnectInterval) {
         logInfo("Attempting to reconnect to WiFi...");
@@ -448,6 +447,9 @@ void load_system_preferences() {
   strlcpy(ssid, preferences.getString("ssid", "").c_str(), sizeof(ssid));
   strlcpy(password, preferences.getString("pass", "").c_str(), sizeof(password));
   strlcpy(weather_city, preferences.getString("city", city).c_str(), sizeof(weather_city));
+
+  weather_lat = preferences.getFloat("lat", weather_lat);
+  weather_lon = preferences.getFloat("lon", weather_lon);
 
   dayBrightness = preferences.getInt("day_br", 255);
   nightBrightness = preferences.getInt("night_br", 20);
@@ -526,7 +528,7 @@ void wait_for_wifi() {
 /**
  * @brief Синхронизация времени через NTP серверы.
  */
-void sync_system_time(const char* ip_str) {
+void sync_system_time(const char *ip_str) {
   char msg[64];
   snprintf(msg, sizeof(msg), "Синхронизация времени...\nIP: %s", ip_str);
   update_screen_status(msg);
@@ -546,7 +548,7 @@ void sync_system_time(const char* ip_str) {
 /**
  * @brief Финальная очистка загрузочного слоя и открытие основного интерфейса.
  */
-void finalize_ui_startup(const char* ip_str) {
+void finalize_ui_startup(const char *ip_str) {
   char msg[64];
   snprintf(msg, sizeof(msg), "Система готова!\nIP: %s", ip_str);
   update_screen_status(msg);
@@ -575,7 +577,7 @@ void finalize_ui_startup(const char* ip_str) {
 void setup() {
   // Инициализация аппаратного Serial-порта для отладки
   Serial.begin(115200);
-  delay(500);   // Для стабилизации Serial
+  delay(500); // Для стабилизации Serial
 
   // Загрузка конфигурации из памяти
   load_system_preferences();
@@ -595,7 +597,7 @@ void setup() {
     logInfo("No WiFi settings found. Starting AP mode immediately.");
     update_screen_status("Настройки не найдены\nЗапуск точки доступа...");
     delay(2000);
-    
+
     generateAPName(); // Генерация уникального имени точки доступа на основе MAC-адреса
     setupWebHandlers(); // Настройка обработчиков веб-сервера для режима AP
     startConfigMode(); // Запуск режима точки доступа и веб-сервера для настройки
@@ -644,7 +646,7 @@ void setup() {
 
     // Завершение работы заставки и показ основного UI
     finalize_ui_startup(ip_str);
-  
+
   } else {
     // Если WiFi не найден — уходим в режим настройки
     update_screen_status("Ошибка WiFi!\nРежим настройки...");
@@ -672,22 +674,22 @@ void loop() {
   handleConfigMode();
 
   // Получаем текущее системное время в миллисекундах для неблокирующих таймеров
-  uint32_t now = millis(); 
+  uint32_t now = millis();
 
   // Проверка статуса Wi-Fi и управление индикатором
   handle_wifi_status();
 
   // Выполнение сетевых задач (погода, реконнект)
   /**
-   * Передаем текущий статус и время в функцию задач, чтобы не вызывать 
+   * Передаем текущий статус и время в функцию задач, чтобы не вызывать
    * WiFi.status() повторно, экономя ресурсы.
    */
   handle_network_tasks(now, last_wifi_status);
 
-/**
+  /**
    * Интерфейс: Опрос системного времени каждую секунду.
-   * Мы сохраняем частоту опроса в 1с, чтобы гарантировать точность часов 
-   * до секунды, но сама функция update_ui_elements внутри себя выполнит 
+   * Мы сохраняем частоту опроса в 1с, чтобы гарантировать точность часов
+   * до секунды, но сама функция update_ui_elements внутри себя выполнит
    * отрисовку (lv_label_set_text) только при фактической смене минуты.
    */
   if (now - lastUpdateTime > 1000) {

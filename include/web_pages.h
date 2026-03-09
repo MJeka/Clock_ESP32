@@ -114,7 +114,8 @@ const char WEB_STYLE[] PROGMEM = R"=====(
  * @brief Генерирует HTML-код главной страницы настроек.
  */
 String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
-                    int nStart, int nEnd, String weatherCity, String citiesJson) {
+                    int nStart, int nEnd, String weatherCity,
+                    String citiesJson) {
   String s = "<html><head><meta charset='UTF-8'>";
   s += "<link rel='icon' href='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕔</text></svg>'>";
   s += "<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>";
@@ -164,7 +165,7 @@ String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
 
   s += "</div>";
 
-// --- JAVASCRIPT ---
+  // --- JAVASCRIPT ---
   s += "<script>";
   /* Загрузка локальной базы городов, переданной с ESP */
   s += "const localCities = " + citiesJson + ";";
@@ -202,30 +203,32 @@ String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
   s += "  list.innerHTML = '';";
   s += "  if (query.length < 2) return;";
   s += "  const q = query.toLowerCase();";
-  
+
   s += "  localCities.forEach(item => {";
   /* Проверка вхождения строки во все языковые поля */
   s += "    const matchRu = item.ru.toLowerCase().includes(q);";
   s += "    const matchUa = item.ua.toLowerCase().includes(q);";
   s += "    const matchEn = item.en.toLowerCase().includes(q);";
-  
+
   s += "    if (matchRu || matchUa || matchEn) {";
   s += "      const option = document.createElement('option');";
-  
+
   /* Выбор отображаемого имени: если введена латиница - берем EN, если кириллица - приоритет UA/RU */
   s += "      let displayName = '';";
   s += "      if (/[a-z]/i.test(q)) { displayName = item.en; }";
   s += "      else if (matchUa) { displayName = item.ua; }";
   s += "      else { displayName = item.ru; }";
-  
-  /* Сохранение значения в формате 'Имя,Страна' и отображение в списке */
-  s += "      option.value = displayName + ',' + item.c;";
-  s += "      option.textContent = displayName + ' (UA)';";
+
+  /* Сохранение значения в формате 'Имя,Страна,Lat,Lon' и отображение в списке
+   */
+  s += "      option.value = displayName + ',' + item.c + ',' + item.lat + ',' "
+       "+ item.lon;";
+  s += "      option.textContent = displayName + ' (' + item.c + ')';";
   s += "      list.appendChild(option);";
   s += "    }";
   s += "  });";
   s += "}";
-  
+
   s += "</script></body></html>";
 
   return s;
