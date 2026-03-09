@@ -11,8 +11,8 @@
 #include <WebServer.h> // Реализация HTTP-сервера (обработка GET/POST запросов веб-интерфейса)
 #include <WiFi.h> // Сетевой стек 802.11 (управление радиомодулем, режимы STA и AP)
 #include <lvgl.h> // Движок графического интерфейса пользователя (UI Engine)
-#include <pgmspace.h>
-#include <string.h>
+#include <pgmspace.h> // Макросы для размещения данных в Flash-памяти (PROGMEM)
+#include <string.h> // Стандартные функции работы со строками (strlen, strcpy, strcat и т.д.)
 
 // =============================================================================
 // ВНЕШНИЕ ССЫЛКИ (EXTERN)
