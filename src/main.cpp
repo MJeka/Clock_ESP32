@@ -2,13 +2,14 @@
 #include "secrets.h" // Конфиденциальные данные и макроопределения (API-ключи, адреса NTP)
 #include "ui.h" // Объявления объектов графического интерфейса (экспорт из SquareLine Studio)
 #include "wifi_logic.h" // Логика сетевых подключений и обработчиков веб-сервера
-#include <ArduinoJson.h> // Десериализация JSON-структур (обработка ответов погодного API)
+// #include <ArduinoJson.h> // Десериализация JSON-структур (обработка ответов погодного API)
 #include <ArduinoOTA.h> // Обязательно для работы метода ArduinoOTA.handle() в loop
 #include <FS.h> // Абстрактный слой файловой системы (интерфейс доступа к Flash-памяти)
 #include <HTTPClient.h> // Протоколы клиент-серверного взаимодействия (реализация HTTP-запросов)
 #include <TFT_eSPI.h> // Графический драйвер нижнего уровня (инициализация и управление дисплеем)
 #include <WiFi.h> // Сетевой стек 802.11 (управление радиомодулем, режимы STA и AP)
 #include <lvgl.h> // Движок графического интерфейса пользователя (UI Engine)
+#include "provider_om.h" // Добавляем новый заголовочный файл
 
 // =============================================================================
 // ПРОТОТИПЫ ФУНКЦИЙ
@@ -24,6 +25,9 @@ TFT_eSPI tft = TFT_eSPI();
 Preferences preferences;
 WebServer server(80);
 DNSServer dnsServer;
+
+// Глобальный объект провайдера
+ProviderOM weather_provider;
 
 // =============================================================================
 // ПЕРЕМЕННЫЕ ДАННЫХ
@@ -201,60 +205,31 @@ void update_weather_icon(int wmo_code, int is_day) {
 }
 
 /**
- * @brief Запрос данных о погоде через Open-Meteo API и обновление
- * глобальных переменных.
+ * @brief Запрос данных о погоде через провайдер и обновление интерфейса.
  */
 void fetch_weather() {
-  // Проверка статуса сетевого соединения перед выполнением HTTP-запроса
-  if (WiFi.status() != WL_CONNECTED)
-    return;
+    // Проверка статуса сетевого соединения перед выполнением запроса
+    if (WiFi.status() != WL_CONNECTED) return;
 
-  HTTPClient http;
-  // Формирование URL запроса с использованием координат и параметров Open-Meteo
-  String url = "https://api.open-meteo.com/v1/forecast?latitude=" +
-               String(weather_lat, 4) + "&longitude=" + String(weather_lon, 4) +
-               "&current=temperature_2m,relative_humidity_2m,is_day,weather_"
-               "code,surface_pressure&timezone=auto";
+    logInfo("Weather update request for %s (%.4f, %.4f)", weather_city, weather_lat, weather_lon);
 
-  logInfo("Weather update request for %s (%.4f, %.4f)", weather_city,
-          weather_lat, weather_lon);
+    // Запрос данных через провайдер
+    weather_data data = weather_provider.fetch_current(weather_lat, weather_lon);
 
-  http.setTimeout(5000); // Установка таймаута для предотвращения блокировки цикла
-  http.begin(url);
+    if (data.is_valid) {
+        // Обновление глобальных переменных состояния
+        current_temp = data.temperature;
+        current_humidity = data.humidity;
+        current_pressure = data.pressure_mm;
 
-  int httpCode = http.GET();
-  if (httpCode == HTTP_CODE_OK) {
-    JsonDocument doc;
-    DeserializationError error = deserializeJson(doc, http.getString());
+        // Обновление иконки и интерфейса
+        update_weather_icon(data.wmo_code, data.is_day);
 
-    if (!error) {
-      if (doc.containsKey("current")) {
-        // Извлечение основных метеоданных из блока 'current'
-        current_temp = doc["current"]["temperature_2m"];
-        current_humidity = doc["current"]["relative_humidity_2m"];
-        // Конвертация давления из hPa (Open-Meteo) в мм рт. ст.
-        current_pressure = (float)doc["current"]["surface_pressure"] * 0.750062;
-
-        // Извлечение WMO кода погоды и флага времени суток
-        int wmo_code = doc["current"]["weather_code"];
-        int is_day = doc["current"]["is_day"];
-
-        update_weather_icon(wmo_code, is_day);
-
-        logInfo("Weather updated: %.1f C, Hum: %d%%, Pres: %d mm, Code: %d, "
-                "IsDay: %d",
-                current_temp, current_humidity, current_pressure, wmo_code,
-                is_day);
-      } else {
-        logInfo("Weather error: 'current' block missing in JSON");
-      }
+        logInfo("Weather updated: %.1f C, Hum: %d%%, Pres: %d mm, Code: %d, IsDay: %d",
+                current_temp, current_humidity, current_pressure, data.wmo_code, data.is_day);
     } else {
-      logInfo("Weather error: JSON parse failed (%s)", error.c_str());
+        logInfo("Weather error: Provider failed to fetch data");
     }
-  } else {
-    logInfo("Weather error: HTTP request failed, code: %d", httpCode);
-  }
-  http.end(); // Завершение сессии и освобождение ресурсов
 }
 
 // =============================================================================
