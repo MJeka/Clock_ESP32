@@ -2,7 +2,6 @@
 #include "secrets.h" // Конфиденциальные данные и макроопределения (API-ключи, адреса NTP)
 #include "ui.h" // Объявления объектов графического интерфейса (экспорт из SquareLine Studio)
 #include "wifi_logic.h" // Логика сетевых подключений и обработчиков веб-сервера
-// #include <ArduinoJson.h> // Десериализация JSON-структур (обработка ответов погодного API)
 #include <ArduinoOTA.h> // Обязательно для работы метода ArduinoOTA.handle() в loop
 #include <FS.h> // Абстрактный слой файловой системы (интерфейс доступа к Flash-памяти)
 #include <HTTPClient.h> // Протоколы клиент-серверного взаимодействия (реализация HTTP-запросов)
@@ -10,6 +9,7 @@
 #include <WiFi.h> // Сетевой стек 802.11 (управление радиомодулем, режимы STA и AP)
 #include <lvgl.h> // Движок графического интерфейса пользователя (UI Engine)
 #include "provider_om.h" // Добавляем новый заголовочный файл
+#include "ui_weather.h" // Карта соответствия кодов погоды и иконок для UI
 
 // =============================================================================
 // ПРОТОТИПЫ ФУНКЦИЙ
@@ -85,56 +85,6 @@ static lv_color_t buf[320 * 20];
 // =============================================================================
 
 // =============================================================================
-// ПОГОДА
-// =============================================================================
-
-/**
- * @brief Структура для сопоставления WMO кода API с ресурсом LVGL.
- */
-struct WeatherIconMap {
-  int code;                      // WMO Weather Code
-  const lv_img_dsc_t *day_img;   // Указатель на дневную иконку
-  const lv_img_dsc_t *night_img; // Указатель на ночную иконку
-};
-
-/**
- * @brief Карта соответствия кодов Open-Meteo (WMO) и иконок.
- * Используются раздельные указатели для дневного и ночного режимов.
- */
-// Массив соответствия кодов погоды Open-Meteo ресурсам LVGL
-const WeatherIconMap weather_icons[] = {
-    {0,  &ui_img_1142085373, &ui_img_1774994173}, // Ясно: day - clear-day, night - clear-night
-    {1,  &ui_img_860055119,  &ui_img_1722154033}, // Преимущественно ясно: day - partly-cloudy-day, night - partly-cloudy-night
-    {2,  &ui_img_860055119,  &ui_img_1722154033}, // Переменная облачность: day - partly-cloudy-day, night - partly-cloudy-night
-    {3,  &ui_img_1190589243, &ui_img_1009007355}, // Пасмурно: day - overcast-day, night - overcast-night
-    {45, &ui_img_459294810,  &ui_img_834737478},  // Туман: day - fog-day, night - fog-night
-    {48, &ui_img_459294810,  &ui_img_834737478},  // Оседающий иней: day - fog-day, night - fog-night
-    {51, &ui_img_1937960972, &ui_img_1618810380}, // Легкая морось: day - partly-cloudy-day-drizzle, night - partly-cloudy-night-drizzle
-    {53, &ui_img_drizzle_png, &ui_img_drizzle_png}, // Умеренная морось: использование универсальной иконки drizzle
-    {55, &ui_img_drizzle_png, &ui_img_drizzle_png}, // Плотная морось: использование универсальной иконки drizzle
-    {61, &ui_img_1181745046, &ui_img_2139431338}, // Небольшой дождь: day - partly-cloudy-day-rain, night - partly-cloudy-night-rain
-    {63, &ui_img_rain_png,   &ui_img_rain_png},   // Умеренный дождь: использование универсальной иконки rain
-    {65, &ui_img_102872400,  &ui_img_102872400},  // Сильный дождь: использование иконки extreme-rain
-    {66, &ui_img_sleet_png, &ui_img_sleet_png},   // Легкий ледяной дождь: использование универсальной иконки sleet
-    {67, &ui_img_sleet_png, &ui_img_sleet_png},   // Плотный ледяной дождь: использование универсальной иконки sleet
-    {71, &ui_img_454646321, &ui_img_544304527},  // Небольшой снегопад: day - partly-cloudy-day-snow, night - partly-cloudy-night-snow
-    {73, &ui_img_snow_png,  &ui_img_snow_png},   // Умеренный снегопад: использование универсальной иконки snow
-    {75, &ui_img_1533765271, &ui_img_1533765271}, // Сильный снегопад: использование иконки extreme-snow
-    {77, &ui_img_snow_png,  &ui_img_snow_png},   // Снежные зерна: использование универсальной иконки snow
-    {80, &ui_img_1181745046, &ui_img_2139431338}, // Слабый ливневый дождь: day - partly-cloudy-day-rain, night - partly-cloudy-night-rain
-    {81, &ui_img_rain_png,   &ui_img_rain_png},   // Умеренный ливневый дождь: использование универсальной иконки rain
-    {82, &ui_img_102872400,  &ui_img_102872400},  // Сильный ливневый дождь: использование иконки extreme-rain
-    {85, &ui_img_454646321, &ui_img_544304527},  // Небольшой снежный ливень: day - partly-cloudy-day-snow, night - partly-cloudy-night-snow
-    {86, &ui_img_1533765271, &ui_img_1533765271}, // Сильный снежный ливень: использование иконки extreme-snow
-    {95, &ui_img_1041458778, &ui_img_1963032070}, // Гроза: day - thunderstorms-day, night - thunderstorms-night
-    {96, &ui_img_980277765,  &ui_img_235723173},  // Гроза со слабым градом: day - thunderstorms-day-rain, night - thunderstorms-night-rain
-    {99, &ui_img_1589909526, &ui_img_683190538}   // Гроза с сильным градом: day - thunderstorms-extreme-day-rain, night - thunderstorms-extreme-night-rain
-};
-
-// Вычисляем размер массива автоматически, чтобы не хардкодить число иконок
-const int weather_icons_count = sizeof(weather_icons) / sizeof(WeatherIconMap);
-
-// =============================================================================
 // ФУНКЦИИ ОТРИСОВКИ
 // =============================================================================
 
@@ -155,7 +105,6 @@ void my_disp_flush(lv_disp_drv_t *disp, const lv_area_t *area,
 // =============================================================================
 // ПОЛУЧЕНИЕ ДАННЫХ
 // =============================================================================
-
 /**
  * @brief Обновляет иконку в интерфейсе на основе кода от Open-Meteo.
  * Если код не найден в справочнике, иконка скрывается.
@@ -170,11 +119,13 @@ void update_weather_icon(int wmo_code, int is_day) {
   // Изначально устанавливаем указатель в nullptr (вместо картинки по умолчанию)
   const lv_img_dsc_t *target_img = nullptr;
 
+  // Приведение целочисленного флага к логическому значению для однозначности сравнения
+  bool day_mode = (is_day != 0);
+
   // Поиск соответствия в справочнике weather_icons
   for (int i = 0; i < weather_icons_count; i++) {
     if (wmo_code == weather_icons[i].code) {
-      target_img =
-          is_day ? weather_icons[i].day_img : weather_icons[i].night_img;
+      target_img = day_mode ? weather_icons[i].day_img : weather_icons[i].night_img;
       break;
     }
   }
