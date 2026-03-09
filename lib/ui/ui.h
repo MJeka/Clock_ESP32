@@ -24,9 +24,8 @@ extern "C" {
 extern lv_obj_t *ui____initial_actions0;
 
 // IMAGES AND IMAGE SETS
-LV_IMG_DECLARE( ui_img_1605233879);   // assets/thermometer-custom.png
-LV_IMG_DECLARE( ui_img_1620110196);   // assets/water-percent-custom.png
-LV_IMG_DECLARE( ui_img_463316836);   // assets/gauge-custom.png
+LV_IMG_DECLARE( ui_img_thermometer_30_png);   // assets/thermometer_30.png
+LV_IMG_DECLARE( ui_img_1191103926);   // assets/water-percent_30.png
 LV_IMG_DECLARE( ui_img_01d_64_png);   // assets/01d_64.png
 LV_IMG_DECLARE( ui_img_01n_64_png);   // assets/01n_64.png
 LV_IMG_DECLARE( ui_img_02d_64_png);   // assets/02d_64.png
@@ -47,10 +46,10 @@ LV_IMG_DECLARE( ui_img_11_64_png);   // assets/11_64.png
 
 // FONTS
 LV_FONT_DECLARE( ui_font_dsdigital128);
-LV_FONT_DECLARE( ui_font_dsdigital40);
 LV_FONT_DECLARE( ui_font_dsdigital48);
-LV_FONT_DECLARE( ui_font_roboto24);
+LV_FONT_DECLARE( ui_font_roboto20);
 LV_FONT_DECLARE( ui_font_roboto36);
+LV_FONT_DECLARE( ui_font_roboto32);
 
 // UI INIT
 void ui_init(void);

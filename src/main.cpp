@@ -41,7 +41,7 @@ uint32_t lastReconnectAttempt = 0; // Время последней попытк
 // =============================================================================
 unsigned long lastUpdateTime = 0;
 unsigned long lastWeatherCheck = 0;
-const unsigned long weatherInterval = 30 * 60 * 1000; // 30 мин * 60 сек * 1000 мс = 1 800 000 мс
+const unsigned long weatherInterval = 15 * 60 * 1000; // 15 мин * 60 сек * 1000 мс = 900 000 мс
 uint32_t configTimeout = 15 * 60 * 1000;  // Таймер автоперезагрузки в режиме точки доступа 15 мин * 60 сек * 1000 мс = 900 000 мс
 bool isConfigMode = false;    // Флаг активного режима настройки
 uint32_t configStartTime = 0; // Время запуска режима AP
@@ -65,9 +65,13 @@ int nightEndHour = 7;     /**< Час возврата в дневной реж�
 // Состояние погоды
 float current_temp = 0.0;
 int current_humidity = 0;
+<<<<<<< HEAD
 int current_pressure = 0;
 float weather_lat = 50.4501; // По умолчанию Киева
 float weather_lon = 30.5234;
+=======
+// int current_pressure = 0;
+>>>>>>> dev
 
 // Локализация
 const char *days_ru[] = {"ВС", "ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ"};
@@ -222,23 +226,41 @@ void fetch_weather() {
     DeserializationError error = deserializeJson(doc, http.getString());
 
     if (!error) {
+<<<<<<< HEAD
       if (doc.containsKey("current")) {
         // Извлечение основных метеоданных из блока 'current'
         current_temp = doc["current"]["temperature_2m"];
         current_humidity = doc["current"]["relative_humidity_2m"];
         // Конвертация давления из hPa (Open-Meteo) в мм рт. ст.
         current_pressure = (float)doc["current"]["surface_pressure"] * 0.750062;
+=======
+      if (doc.containsKey("main")) {
+        // Извлечение основных метеоданных
+        current_temp = doc["main"]["temp"];
+        current_humidity = doc["main"]["humidity"];
+        // current_pressure = (int)doc["main"]["pressure"] *
+        //                    0.750062; // Конвертация hPa в мм рт. ст.
+>>>>>>> dev
 
         // Извлечение WMO кода погоды и флага времени суток
         int wmo_code = doc["current"]["weather_code"];
         int is_day = doc["current"]["is_day"];
 
+<<<<<<< HEAD
         update_weather_icon(wmo_code, is_day);
 
         logInfo("Weather updated: %.1f C, Hum: %d%%, Pres: %d mm, Code: %d, "
                 "IsDay: %d",
                 current_temp, current_humidity, current_pressure, wmo_code,
                 is_day);
+=======
+        logInfo("Weather updated: %.1f C, Hum: %d%%, Icon: %s",
+                current_temp, current_humidity,
+                icon_code ? icon_code : "N/A");
+        // logInfo("Weather updated: %.1f C, Hum: %d%%, Pres: %d mm, Icon: %s",
+        //         current_temp, current_humidity, current_pressure,
+        //         icon_code ? icon_code : "N/A");
+>>>>>>> dev
       } else {
         logInfo("Weather error: 'current' block missing in JSON");
       }
@@ -312,7 +334,7 @@ void update_ui_elements(bool force) {
       dtostrf(current_temp, 4, 1, buf_tmp);
       lv_label_set_text_fmt(ui_uiLabelTemp1, "%s °C", buf_tmp);
       lv_label_set_text_fmt(ui_uiLabelHumidity1, "%d %%", current_humidity);
-      lv_label_set_text_fmt(ui_uiLabelPressure1, "%d mm", current_pressure);
+      // lv_label_set_text_fmt(ui_uiLabelPressure1, "%d mm", current_pressure);
 
       // Принудительный запуск цикла отрисовки LVGL для немедленного отображения
       // изменений
@@ -494,7 +516,7 @@ void create_boot_screen() {
 
   load_label = lv_label_create(top_layer);
   lv_obj_set_style_text_color(load_label, lv_color_hex(0xFFFFFF), 0);
-  lv_obj_set_style_text_font(load_label, &ui_font_roboto24, 0);
+  lv_obj_set_style_text_font(load_label, &ui_font_roboto20, 0);
   lv_obj_set_style_text_align(load_label, LV_TEXT_ALIGN_CENTER, 0);
   lv_obj_align(load_label, LV_ALIGN_CENTER, 0, 0);
 }
