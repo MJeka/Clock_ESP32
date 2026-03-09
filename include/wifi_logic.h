@@ -80,8 +80,9 @@ void update_screen_status(const char *txt) {
 // =============================================================================
 
 /**
- * @brief Активирует верхний графический слой ("занавес") для отображения системных процессов.
- * Используется при загрузке и OTA-обновлении, чтобы перекрыть основной интерфейс.
+ * @brief Активирует верхний графический слой ("занавес") для отображения
+ * системных процессов. Используется при загрузке и OTA-обновлении, чтобы
+ * перекрыть основной интерфейс.
  */
 void show_ota_layer() {
   lv_obj_t *top_layer = lv_layer_top();
@@ -113,7 +114,7 @@ void update_ota_status(const char *message, int percent) {
   }
   // Принудительный вызов обработчика для немедленного обновления экрана
   lv_timer_handler();
-  lv_refr_now(NULL);  // Принудительно отрисовываем экран ПРЯМО СЕЙЧАС
+  lv_refr_now(NULL); // Принудительно отрисовываем экран ПРЯМО СЕЙЧАС
 }
 
 /**
@@ -121,7 +122,8 @@ void update_ota_status(const char *message, int percent) {
  * Обеспечивает визуализацию процесса на дисплее через верхний графический слой.
  */
 void setupOTA() {
-  // 1. Установка сетевого имени устройства (будет отображаться в списке портов IDE)
+  // 1. Установка сетевого имени устройства (будет отображаться в списке портов
+  // IDE)
   ArduinoOTA.setHostname(OTA_HOSTNAME);
 
   // 2. Установка пароля доступа (защита от несанкционированной прошивки)
@@ -146,7 +148,8 @@ void setupOTA() {
     logInfo("OTA: Обновление успешно завершено");
   });
 
-  // 5. Обработчик события: Визуализация прогресса (вывод % на дисплей и в Serial)
+  // 5. Обработчик события: Визуализация прогресса (вывод % на дисплей и в
+  // Serial)
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
     int percent = (progress / (total / 100));
     update_ota_status("Обновление прошивки...", percent);
@@ -158,17 +161,23 @@ void setupOTA() {
     char err_buf[64];
     const char *err_desc = "Ошибка";
 
-    if (error == OTA_AUTH_ERROR) err_desc = "Отказ в авторизации";
-    else if (error == OTA_BEGIN_ERROR) err_desc = "Сбой инициализации";
-    else if (error == OTA_CONNECT_ERROR) err_desc = "Сбой соединения";
-    else if (error == OTA_RECEIVE_ERROR) err_desc = "Ошибка приема данных";
-    else if (error == OTA_END_ERROR) err_desc = "Сбой завершения";
+    if (error == OTA_AUTH_ERROR)
+      err_desc = "Отказ в авторизации";
+    else if (error == OTA_BEGIN_ERROR)
+      err_desc = "Сбой инициализации";
+    else if (error == OTA_CONNECT_ERROR)
+      err_desc = "Сбой соединения";
+    else if (error == OTA_RECEIVE_ERROR)
+      err_desc = "Ошибка приема данных";
+    else if (error == OTA_END_ERROR)
+      err_desc = "Сбой завершения";
 
     snprintf(err_buf, sizeof(err_buf), "OTA %s\n[%u]", err_desc, error);
     update_ota_status(err_buf, 0);
     logInfo("OTA: %s [%u]", err_desc, error);
 
-    // Пауза перед скрытием слоя ошибки, чтобы пользователь успел прочитать текст
+    // Пауза перед скрытием слоя ошибки, чтобы пользователь успел прочитать
+    // текст
     delay(3000);
     lv_obj_add_flag(lv_layer_top(), LV_OBJ_FLAG_HIDDEN);
   });
@@ -195,7 +204,8 @@ void generateAPName() {
 }
 
 /**
- * @brief Вспомогательная функция для сборки HTML-списка из результатов сканирования.
+ * @brief Вспомогательная функция для сборки HTML-списка из результатов
+ * сканирования.
  * @param n Количество найденных сетей.
  */
 String buildNetworkList(int n) {
@@ -215,8 +225,8 @@ String buildNetworkList(int n) {
 }
 
 /**
- * @brief Формирует список HTML-опций на основе последнего сканирования (асинхронно).
- * Исключает блокировку основного цикла (loop).
+ * @brief Формирует список HTML-опций на основе последнего сканирования
+ * (асинхронно). Исключает блокировку основного цикла (loop).
  */
 String getCachedNetworks() {
   // Проверяем текущий статус сканера
@@ -224,8 +234,8 @@ String getCachedNetworks() {
 
   if (n == -2) {
     /**
-     * Сканирование еще не инициировано. Запускаем в фоновом режиме (async = true).
-     * Это не остановит выполнение кода и часов.
+     * Сканирование еще не инициировано. Запускаем в фоновом режиме (async =
+     * true). Это не остановит выполнение кода и часов.
      */
     WiFi.scanNetworks(true);
     return "<option>Сканирование начато...</option>";
@@ -258,7 +268,8 @@ String scanNetworks() {
 
 /**
  * @brief Обработчик сохранения настроек через веб-интерфейс.
- * Выполняет сохранение параметров в NVS и инициирует обновление состояния системы.
+ * Выполняет сохранение параметров в NVS и инициирует обновление состояния
+ * системы.
  */
 void handleSaveSettings() {
   if (server.hasArg("d_br")) {
@@ -337,7 +348,8 @@ void handleSaveSettings() {
 
 /**
  * @brief Инициализация веб-обработчиков.
- * Настраивает маршруты для главной страницы, сохранения Wi-Fi и сброса настроек.
+ * Настраивает маршруты для главной страницы, сохранения Wi-Fi и сброса
+ * настроек.
  */
 void setupWebHandlers() {
   /**
@@ -356,8 +368,8 @@ void setupWebHandlers() {
    * Очищает кэш и запускает новый фоновый поиск.
    */
   server.on("/scan_trigger", HTTP_GET, []() {
-    WiFi.scanDelete();        // Удаление старого результата
-    WiFi.scanNetworks(true);  // Запуск нового асинхронного поиска
+    WiFi.scanDelete();       // Удаление старого результата
+    WiFi.scanNetworks(true); // Запуск нового асинхронного поиска
     server.send(200, "text/plain", "OK");
   });
 

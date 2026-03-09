@@ -117,8 +117,11 @@ String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
                     int nStart, int nEnd, String weatherCity,
                     String citiesJson) {
   String s = "<html><head><meta charset='UTF-8'>";
-  s += "<link rel='icon' href='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🕔</text></svg>'>";
-  s += "<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'>";
+  s += "<link rel='icon' href='data:image/svg+xml,<svg "
+       "xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text "
+       "y=%22.9em%22 font-size=%2290%22>🕔</text></svg>'>";
+  s += "<meta name='viewport' content='width=device-width, initial-scale=1.0, "
+       "maximum-scale=1.0, user-scalable=no'>";
   s += String(WEB_STYLE);
   s += "</head><body>";
 
@@ -127,41 +130,64 @@ String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
   // --- БЛОК НАСТРОЙКИ WIFI ---
   s += "<div class='card'><h2>Настройка WiFi</h2>";
   // Кнопка для ручного обновления списка сетей
-  s += "<button type='button' id='refreshBtn' class='btn-refresh' onclick='refreshWiFi()'>ОБНОВИТЬ СПИСОК СЕТЕЙ</button>";
+  s += "<button type='button' id='refreshBtn' class='btn-refresh' "
+       "onclick='refreshWiFi()'>ОБНОВИТЬ СПИСОК СЕТЕЙ</button>";
   s += "<form action='/save' method='POST'>";
   s += "<label>Доступные сети</label>";
-  s += "<select name='ssid_select' id='ssid_select' onchange='document.getElementById(\"custom_ssid\").value=this.value'>";
+  s += "<select name='ssid_select' id='ssid_select' "
+       "onchange='document.getElementById(\"custom_ssid\").value=this.value'>";
   s += "<option value=''>-- Выберите сеть --</option>" + networks + "</select>";
-  s += "<input type='text' name='custom_ssid' id='custom_ssid' placeholder='Имя сети (SSID)' value='" + savedSSID + "'>";
-  s += "<div class='pass-wrapper'><input type='password' name='pass' id='pass' placeholder='Пароль'>";
-  s += "<div id='eye_icon' class='eye-btn eye-closed' onclick='togglePass()'></div></div>";
+  s += "<input type='text' name='custom_ssid' id='custom_ssid' "
+       "placeholder='Имя сети (SSID)' value='" +
+       savedSSID + "'>";
+  s += "<div class='pass-wrapper'><input type='password' name='pass' id='pass' "
+       "placeholder='Пароль'>";
+  s += "<div id='eye_icon' class='eye-btn eye-closed' "
+       "onclick='togglePass()'></div></div>";
   s += "<button type='submit'>СОХРАНИТЬ WIFI</button></form>";
   // Кнопка сброса только настроек WiFi
-  s += "<button class='btn-reset' onclick='if(confirm(\"Сбросить настройки WiFi?\")) location.href=\"/reset\"'>СБРОСИТЬ НАСТРОЙКИ WIFI</button></div>";
+  s += "<button class='btn-reset' onclick='if(confirm(\"Сбросить настройки "
+       "WiFi?\")) location.href=\"/reset\"'>СБРОСИТЬ НАСТРОЙКИ "
+       "WIFI</button></div>";
 
   // --- БЛОК НАСТРОЕК ЭКРАНА И ПОГОДЫ ---
-  s += "<div class='card'><h2>Настройки устройства</h2><form action='/save_settings' method='POST'>";
+  s += "<div class='card'><h2>Настройки устройства</h2><form "
+       "action='/save_settings' method='POST'>";
   s += "<label>Город (Поиск по локальной базе)</label>";
-  s += "<input type='text' name='city' id='cityInput' list='citySuggestions' placeholder='Напр: Київ' autocomplete='off' oninput='searchCity(this.value)' value='" + weatherCity + "'>";
+  s += "<input type='text' name='city' id='cityInput' list='citySuggestions' "
+       "placeholder='Напр: Київ' autocomplete='off' "
+       "oninput='searchCity(this.value)' value='" +
+       weatherCity + "'>";
   s += "<datalist id='citySuggestions'></datalist>";
 
   s += "<label>Яркость День (0-255)</label>";
-  s += "<input type='number' name='d_br' min='0' max='255' value='" + String(dBr) + "'>";
+  s += "<input type='number' name='d_br' min='0' max='255' value='" +
+       String(dBr) + "'>";
   s += "<label>Яркость Ночь (0-255)</label>";
-  s += "<input type='number' name='n_br' min='0' max='255' value='" + String(nBr) + "'>";
+  s += "<input type='number' name='n_br' min='0' max='255' value='" +
+       String(nBr) + "'>";
   s += "<label>Начало ночи (час, 0-23)</label>";
-  s += "<input type='number' name='n_st' min='0' max='23' value='" + String(nStart) + "'>";
+  s += "<input type='number' name='n_st' min='0' max='23' value='" +
+       String(nStart) + "'>";
   s += "<label>Конец ночи (час, 0-23)</label>";
-  s += "<input type='number' name='n_en' min='0' max='23' value='" + String(nEnd) + "'>";
+  s += "<input type='number' name='n_en' min='0' max='23' value='" +
+       String(nEnd) + "'>";
 
-  s += "<button type='submit' class='btn-save'>ОБНОВИТЬ НАСТРОЙКИ</button></form>";
+  s += "<button type='submit' class='btn-save'>ОБНОВИТЬ "
+       "НАСТРОЙКИ</button></form>";
   s += "</div>";
 
   // --- КНОПКА ПЕРЕЗАГРУЗКИ В САМОМ НИЗУ ---
-  s += "<button class='btn-reboot' onclick='if(confirm(\"Перезагрузить устройство?\")) location.href=\"/reboot\"'>ПЕРЕЗАГРУЗИТЬ УСТРОЙСТВО</button>";
+  s += "<button class='btn-reboot' onclick='if(confirm(\"Перезагрузить "
+       "устройство?\")) location.href=\"/reboot\"'>ПЕРЕЗАГРУЗИТЬ "
+       "УСТРОЙСТВО</button>";
 
   // --- КНОПКА ПОЛНОГО СБРОСА (ЗАВОДСКИЕ НАСТРОЙКИ) ---
-  s += "<a href='/full_reset' class='reset-link' style='text-align:center; border: 1px solid #ff4444; padding: 10px; border-radius: 8px;' onclick='return confirm(\"ВНИМАНИЕ! Это удалит ВСЕ настройки (WiFi, город, яркость). Продолжить?\")'>ПОЛНЫЙ СБРОС (ЗАВОДСКИЕ НАСТРОЙКИ)</a>";
+  s +=
+      "<a href='/full_reset' class='reset-link' style='text-align:center; "
+      "border: 1px solid #ff4444; padding: 10px; border-radius: 8px;' "
+      "onclick='return confirm(\"ВНИМАНИЕ! Это удалит ВСЕ настройки (WiFi, "
+      "город, яркость). Продолжить?\")'>ПОЛНЫЙ СБРОС (ЗАВОДСКИЕ НАСТРОЙКИ)</a>";
 
   s += "</div>";
 
@@ -179,7 +205,8 @@ String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
   s += "  btn.disabled = true; btn.innerText = 'ПОИСК СЕТЕЙ...';";
   s += "  fetch('/scan_trigger').then(function() {";
   s += "    var checkStatus = setInterval(function() {";
-  s += "      fetch('/scan_status').then(function(r) { return r.text(); }).then(function(status) {";
+  s += "      fetch('/scan_status').then(function(r) { return r.text(); "
+       "}).then(function(status) {";
   s += "        if (parseInt(status) >= 0) {";
   s += "          clearInterval(checkStatus);";
   s += "          location.reload();";
@@ -190,13 +217,17 @@ String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
   s += "}";
 
   s += "function togglePass(){";
-  s += "  var x=document.getElementById('pass'); var icon=document.getElementById('eye_icon');";
-  s += "  if(x.type==='password'){ x.type='text'; icon.classList.remove('eye-closed'); icon.classList.add('eye-open'); }";
-  s += "  else { x.type='password'; icon.classList.remove('eye-open'); icon.classList.add('eye-closed'); }";
+  s += "  var x=document.getElementById('pass'); var "
+       "icon=document.getElementById('eye_icon');";
+  s += "  if(x.type==='password'){ x.type='text'; "
+       "icon.classList.remove('eye-closed'); icon.classList.add('eye-open'); }";
+  s += "  else { x.type='password'; icon.classList.remove('eye-open'); "
+       "icon.classList.add('eye-closed'); }";
   s += "}";
 
   /** * @section CITY_AUTOCOMPLETE_LOCAL
-   * Исправленная логика поиска: проверяет совпадения по всем языкам (RU, UA, EN) одновременно.
+   * Исправленная логика поиска: проверяет совпадения по всем языкам (RU, UA,
+   * EN) одновременно.
    */
   s += "function searchCity(query) {";
   s += "  const list = document.getElementById('citySuggestions');";
@@ -213,7 +244,8 @@ String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
   s += "    if (matchRu || matchUa || matchEn) {";
   s += "      const option = document.createElement('option');";
 
-  /* Выбор отображаемого имени: если введена латиница - берем EN, если кириллица - приоритет UA/RU */
+  /* Выбор отображаемого имени: если введена латиница - берем EN, если кириллица
+   * - приоритет UA/RU */
   s += "      let displayName = '';";
   s += "      if (/[a-z]/i.test(q)) { displayName = item.en; }";
   s += "      else if (matchUa) { displayName = item.ua; }";
