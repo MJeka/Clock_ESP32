@@ -115,12 +115,12 @@ lv_obj_clear_flag( ui_Container2, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_SCROLLABLE
 ui_uiLabelWeather = lv_img_create(ui_Screen1);
 lv_obj_set_width( ui_uiLabelWeather, 64);
 lv_obj_set_height( ui_uiLabelWeather, 64);
-lv_obj_set_x( ui_uiLabelWeather, -120 );
+lv_obj_set_x( ui_uiLabelWeather, -115 );
 lv_obj_set_y( ui_uiLabelWeather, 81 );
 lv_obj_set_align( ui_uiLabelWeather, LV_ALIGN_CENTER );
 lv_obj_add_flag( ui_uiLabelWeather, LV_OBJ_FLAG_ADV_HITTEST );   /// Flags
 lv_obj_clear_flag( ui_uiLabelWeather, LV_OBJ_FLAG_SCROLLABLE );    /// Flags
-lv_img_set_zoom(ui_uiLabelWeather,400);
+lv_img_set_zoom(ui_uiLabelWeather,450);
 
 ui_Image7 = lv_img_create(ui_Screen1);
 lv_img_set_src(ui_Image7, &ui_img_01d_64_png);
