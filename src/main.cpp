@@ -1,3 +1,10 @@
+/**
+ * @brief Версия прошивки
+ */
+#ifndef BUILD_VERSION
+#define BUILD_VERSION "unknown"
+#endif
+
 #include "provider_om.h" // Добавляем новый заголовочный файл
 #include "secrets.h" // Конфиденциальные данные и макроопределения (API-ключи, адреса NTP)
 #include "ui.h" // Объявления объектов графического интерфейса (экспорт из SquareLine Studio)
@@ -433,20 +440,21 @@ void create_boot_screen() {
  * @brief Цикл ожидания подключения к WiFi с визуализацией прогресса.
  */
 void wait_for_wifi() {
-  update_screen_status("Поиск сети...");
+  update_screen_status("Поиск сети...\n\n\nv. " BUILD_VERSION);
   int wait_retry = 0;
   int dot_count = 0;
   while (WiFi.status() != WL_CONNECTED && wait_retry < 30) {
     String dots = "";
     for (int i = 0; i < dot_count; i++) dots += ".";
 
-    char msg[64];
-    snprintf(msg, sizeof(msg), "Подключение к\n%s%s", ssid, dots.c_str());
+    char msg[128];
+    snprintf(msg, sizeof(msg), "Подключение к\n%s%s\n\n\nv. %s", ssid, dots.c_str(), BUILD_VERSION);
     update_screen_status(msg);
 
     dot_count = (dot_count + 1) % 4;
     wait_retry++;
 
+    // Принудительная задержка для анимации точек
     for (int i = 0; i < 5; i++) {
       lv_timer_handler();
       delay(100);
@@ -459,8 +467,8 @@ void wait_for_wifi() {
  * @brief Синхронизация времени через NTP серверы.
  */
 void sync_system_time(const char *ip_str) {
-  char msg[64];
-  snprintf(msg, sizeof(msg), "Синхронизация времени...\nIP: %s", ip_str);
+  char msg[128];
+  snprintf(msg, sizeof(msg), "Синхронизация времени...\n\nIP: %s\n\n\nv. %s", ip_str, BUILD_VERSION);
   update_screen_status(msg);
 
   configTzTime(TZ_INFO, ntpServer, ntpServer2);
@@ -479,8 +487,8 @@ void sync_system_time(const char *ip_str) {
  * @brief Финальная очистка загрузочного слоя и открытие основного интерфейса.
  */
 void finalize_ui_startup(const char *ip_str) {
-  char msg[64];
-  snprintf(msg, sizeof(msg), "Система готова!\nIP: %s", ip_str);
+  char msg[128];
+  snprintf(msg, sizeof(msg), "Система готова!\nIP: %s\n\n\nv. %s", ip_str, BUILD_VERSION);
   update_screen_status(msg);
   delay(2000);
 
@@ -508,6 +516,7 @@ void setup() {
   // Инициализация аппаратного Serial-порта для отладки
   Serial.begin(115200);
   delay(500); // Для стабилизации Serial
+  logInfo("[SYSTEM] Firmware Version: " BUILD_VERSION);
 
   // Загрузка конфигурации из памяти
   load_system_preferences();
@@ -518,7 +527,7 @@ void setup() {
   // Создание черного слоя заставки
   create_boot_screen();
 
-  update_screen_status("Инициализация...");
+  update_screen_status("Инициализация...\n\n\nv. " BUILD_VERSION);
   ui_init(); // Загрузка интерфейса SquareLine под черным слоем
   delay(1000);
 
@@ -526,7 +535,7 @@ void setup() {
   // доступа
   if (strlen(ssid) == 0) {
     logInfo("No WiFi settings found. Starting AP mode immediately.");
-    update_screen_status("Настройки не найдены\nЗапуск точки доступа...");
+    update_screen_status( "Настройки не найдены\nЗапуск точки доступа...\n\n\nv. " BUILD_VERSION);
     delay(2000);
 
     generateAPName(); // Генерация уникального имени точки доступа на основе MAC-адреса
@@ -551,8 +560,8 @@ void setup() {
     char ip_str[20];
     strncpy(ip_str, ip.toString().c_str(), sizeof(ip_str));
 
-    char msg[64];
-    snprintf(msg, sizeof(msg), "Сеть подключена!\nIP: %s", ip_str);
+    char msg[128];
+    snprintf(msg, sizeof(msg), "Сеть подключена!\nIP: %s\n\n\nv. %s", ip_str, BUILD_VERSION);
     logInfo("IP - %s", ip_str);
     update_screen_status(msg);
     delay(1000);
@@ -567,7 +576,7 @@ void setup() {
     delay(1000);
 
     // Обновление погоды
-    snprintf(msg, sizeof(msg), "Обновление погоды...\nIP: %s", ip_str);
+    snprintf(msg, sizeof(msg), "Обновление погоды...\nIP: %s\n\n\nv. %s", ip_str, BUILD_VERSION);
     update_screen_status(msg);
     fetch_weather();
     delay(1000);
@@ -580,7 +589,7 @@ void setup() {
 
   } else {
     // Если WiFi не найден — уходим в режим настройки
-    update_screen_status("Ошибка WiFi!\nРежим настройки...");
+    update_screen_status("Ошибка WiFi!\nРежим настройки...\n\nv. " BUILD_VERSION);
     WiFi.disconnect(true);
     delay(2000);
 

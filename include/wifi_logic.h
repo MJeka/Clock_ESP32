@@ -360,7 +360,8 @@ void setupWebHandlers() {
     server.send(200, "text/html",
                 getIndexPage(getCachedNetworks(), ssid, dayBrightness,
                              nightBrightness, nightStartHour, nightEndHour,
-                             String(weather_city), getCitiesJson()));
+                             String(weather_city), getCitiesJson(),
+                             BUILD_VERSION));
   });
 
   /**

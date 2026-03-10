@@ -107,6 +107,13 @@ const char WEB_STYLE[] PROGMEM = R"=====(
   /* Иконки глаза (Base64) */
   .eye-open{ background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAQAAADZc7J/AAAACXBIWXMAAA53AAAOdwHGnZK7AAACGUlEQVRIx+3Uy2/MURwF8E9H00kTqh4h6hGNWKjSkiBYEBUSr4Wy6Ia/QFig7crW0iORSkiwFSuCv2BKaqEeLeqV6EyxoEEi03T6tdCOX5tRj8TOuav7+N57vuecXP7jn6NM2a8OlELKHMvVqzXTFF9k9XjgtaHfeTNtozMe+yoSY1i/q/aZPjmDlDUO2ala+OilV94pqLLIUjXK5WWccvtnTGY74a2Ql3HUatOKOxVqtbhmUPjsnIWlyhvcVjCiywEzkNKg3RWXtWuQQlqTG4aEjPUTy7frFQadNA9UajVQVCDnuEpQ5YgB4YVdyfJm/UKfZuWjyrTKK+jWoUO3grzjo3qV2eqhkLN3rHyPnNBlbfHCVXLCBTWgxkUhqzHRbqeQtQOaPBfuqE8wahfum1+cL9AttCVO1OkUntnME6HXynHWXhY6xml0Xrg0bqXRU6E3ZcRvBLYEQnzP0SbPhE7L/qiFFe4Kz22BHbJCJtHGr0Rc556Qs3tsYa+c8EBT0aqf21iuWZ/Q/8NG2OWFMOCwqkmDVOOkQaHHtomirJcRhly3RRopjaNRbhuN8kwH3TOi4JaGUroudM5nYdA1LWpVFHemWe2YTnnhrRNmJT1PIm27IzZIG5bV541Pppir1hLVynx001ldRibzt9p+V/UbHvehfPXIaRsTrEoyGEOFxVaqM99UBR+88lCP95O/XBp/k9H/+FN8A2QS1V8nEhPbAAAAAElFTkSuQmCC'); }
   .eye-closed{ background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAQAAADZc7J/AAAACXBIWXMAAA7EAAAOxAGVKw4bAAAChUlEQVRIx+XVzWsUVhQF8N9kFDMZP8DYkCAiGGOGVOtKiphuFCIKklVog6S7rApas3HRBnfFP6C40Gxs3fmB0IVuTKLRYnVtUXGs1sEhCbMwYGgSZ56LmUzejKMuXBXv8r5z3r33vPPe4zONDTZ8Cj3jukvWfwzWJK3NFlu0SWuq5rvdElxb3mBVA+oaGfvssd0XUpg364l77nhom3O+MeVHc43rpvW7bFYQLCrIySlYFAQzLvtLcEv3CiFR0/TXTuqTknfHlAfyXiOtw0699tuIKcMeNard4oS8IOuUHqtBsw4dmsFXHlSqN9lpXT291RmL5o3JVLpqN2JCVta44/a5WW1+wAtntMb0TS4IXhq2ppLZZVLJkmnTliwpRLN/b0bJ7zYt09cZEzx1qLphuwnBXd/p0mnUYo10CUc8E5wrD5I0quhffVFHI4K7OkGXiXrlcUjOGz9LMqDglcEaOceVKpmybcrS7ZaKUEfNKRjgseC0ZLS0Wda0HTV0Bt22OUIlnRY8buTE5eiquG7YI51+URIawQYUzDlaM8INRaPGo9mHBDe0RKhBr8ojJP3kjZzD0eJxRQsRfYf7gpEI0eeFYllE1joreK6/auze6rknbDPkvmBCe3QGTwVjK35s9ZuSaT9IvSPdM0Ulk3ZVsM2G5QUXVowEG/1qwX/OOxyZdrfb/jFupFI9IWPMvIV6K5elOyan5HU0e7MO7ZXLtFqPU7KCvBM1ckYxVKUn9DroS1tt1eOAYy56KZh31d7ofaqJbpPV6t+atVT3oMy6ol+6lrQqoq/YJqnoD53apDDjb0/c86eHFt7nuvWu1V2ZhJaGj+p7N7jkuszHYB+KT/ws/sfxFt2N6XbIrTXBAAAAAElFTkSuQmCC'); }
+  .version-info { 
+    color: #666; 
+    font-size: 12px; 
+    margin-top: 20px; 
+    text-align: center; 
+    width: 100%;
+  }
 </style>
 )=====";
 
@@ -114,8 +121,8 @@ const char WEB_STYLE[] PROGMEM = R"=====(
  * @brief Генерирует HTML-код главной страницы настроек.
  */
 String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
-                    int nStart, int nEnd, String weatherCity,
-                    String citiesJson) {
+                    int nStart, int nEnd, String weatherCity, String citiesJson,
+                    String buildVersion) {
   String s = "<html><head><meta charset='UTF-8'>";
   s += "<link rel='icon' href='data:image/svg+xml,<svg "
        "xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text "
@@ -190,6 +197,7 @@ String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
       "город, яркость). Продолжить?\")'>ПОЛНЫЙ СБРОС (ЗАВОДСКИЕ НАСТРОЙКИ)</a>";
 
   s += "</div>";
+  s += "<div class='version-info'>Версия прошивки: " + buildVersion + "</div>";
 
   // --- JAVASCRIPT ---
   s += "<script>";
