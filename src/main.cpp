@@ -1,15 +1,12 @@
-#include "cities_db.h" // Компактная база городов для автодополнения (хранится в Flash-памяти)
+#include "provider_om.h" // Добавляем новый заголовочный файл
 #include "secrets.h" // Конфиденциальные данные и макроопределения (API-ключи, адреса NTP)
 #include "ui.h" // Объявления объектов графического интерфейса (экспорт из SquareLine Studio)
+#include "ui_weather.h" // Карта соответствия кодов погоды и иконок для UI
 #include "wifi_logic.h" // Логика сетевых подключений и обработчиков веб-сервера
 #include <ArduinoOTA.h> // Обязательно для работы метода ArduinoOTA.handle() в loop
-#include <FS.h> // Абстрактный слой файловой системы (интерфейс доступа к Flash-памяти)
-#include <HTTPClient.h> // Протоколы клиент-серверного взаимодействия (реализация HTTP-запросов)
 #include <TFT_eSPI.h> // Графический драйвер нижнего уровня (инициализация и управление дисплеем)
 #include <WiFi.h> // Сетевой стек 802.11 (управление радиомодулем, режимы STA и AP)
 #include <lvgl.h> // Движок графического интерфейса пользователя (UI Engine)
-#include "provider_om.h" // Добавляем новый заголовочный файл
-#include "ui_weather.h" // Карта соответствия кодов погоды и иконок для UI
 
 // =============================================================================
 // ПРОТОТИПЫ ФУНКЦИЙ
@@ -119,7 +116,8 @@ void update_weather_icon(int wmo_code, int is_day) {
   // Изначально устанавливаем указатель в nullptr (вместо картинки по умолчанию)
   const lv_img_dsc_t *target_img = nullptr;
 
-  // Приведение целочисленного флага к логическому значению для однозначности сравнения
+  // Приведение целочисленного флага к логическому значению для однозначности
+  // сравнения
   bool day_mode = (is_day != 0);
 
   // Поиск соответствия в справочнике weather_icons
@@ -159,28 +157,28 @@ void update_weather_icon(int wmo_code, int is_day) {
  * @brief Запрос данных о погоде через провайдер и обновление интерфейса.
  */
 void fetch_weather() {
-    // Проверка статуса сетевого соединения перед выполнением запроса
+  // Проверка статуса сетевого соединения перед выполнением запроса
     if (WiFi.status() != WL_CONNECTED) return;
 
     logInfo("Weather update request for %s (%.4f, %.4f)", weather_city, weather_lat, weather_lon);
 
-    // Запрос данных через провайдер
-    weather_data data = weather_provider.fetch_current(weather_lat, weather_lon);
+  // Запрос данных через провайдер
+  weather_data data = weather_provider.fetch_current(weather_lat, weather_lon);
 
-    if (data.is_valid) {
-        // Обновление глобальных переменных состояния
-        current_temp = data.temperature;
-        current_humidity = data.humidity;
-        current_pressure = data.pressure_mm;
+  if (data.is_valid) {
+    // Обновление глобальных переменных состояния
+    current_temp = data.temperature;
+    current_humidity = data.humidity;
+    current_pressure = data.pressure_mm;
 
-        // Обновление иконки и интерфейса
-        update_weather_icon(data.wmo_code, data.is_day);
+    // Обновление иконки и интерфейса
+    update_weather_icon(data.wmo_code, data.is_day);
 
         logInfo("Weather updated: %.1f C, Hum: %d%%, Pres: %d mm, Code: %d, IsDay: %d",
                 current_temp, current_humidity, current_pressure, data.wmo_code, data.is_day);
-    } else {
-        logInfo("Weather error: Provider failed to fetch data");
-    }
+  } else {
+    logInfo("Weather error: Provider failed to fetch data");
+  }
 }
 
 // =============================================================================
@@ -349,7 +347,7 @@ void handle_network_tasks(uint32_t now, int current_wifi_status) {
         fetch_weather();
 
         // Обновляем экран сразу после получения новых данных о погоде.
-        update_ui_elements();
+        update_ui_elements(true);
         lastWeatherCheck = now;
       }
 
@@ -524,7 +522,8 @@ void setup() {
   ui_init(); // Загрузка интерфейса SquareLine под черным слоем
   delay(1000);
 
-  // ПРОВЕРКА: Если настройки WiFi отсутствуют, сразу переходим в режим точки доступа
+  // ПРОВЕРКА: Если настройки WiFi отсутствуют, сразу переходим в режим точки
+  // доступа
   if (strlen(ssid) == 0) {
     logInfo("No WiFi settings found. Starting AP mode immediately.");
     update_screen_status("Настройки не найдены\nЗапуск точки доступа...");

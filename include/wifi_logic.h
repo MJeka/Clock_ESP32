@@ -10,7 +10,7 @@
 #include <Preferences.h> // Работа с NVS-памятью (энергонезависимое хранение конфигурации)
 #include <WebServer.h> // Реализация HTTP-сервера (обработка GET/POST запросов веб-интерфейса)
 #include <WiFi.h> // Сетевой стек 802.11 (управление радиомодулем, режимы STA и AP)
-#include <lvgl.h> // Движок графического интерфейса пользователя (UI Engine)
+#include <lvgl.h>     // Движок графического интерфейса пользователя (UI Engine)
 #include <pgmspace.h> // Макросы для размещения данных в Flash-памяти (PROGMEM)
 #include <string.h> // Стандартные функции работы со строками (strlen, strcpy, strcat и т.д.)
 
@@ -198,7 +198,7 @@ void generateAPName() {
   uint64_t chipId = ESP.getEfuseMac();
   uint16_t shortId = (uint16_t)(chipId >> 32);
   char buf[25];
-  sprintf(buf, "DIY-CLOCK-%04X", shortId);
+  sprintf(buf, "ESP-CLOCK-%04X", shortId);
   apName = String(buf);
   logInfo("Static AP Name: %s", apName.c_str());
 }
@@ -210,7 +210,7 @@ void generateAPName() {
  */
 String buildNetworkList(int n) {
   if (n <= 0)
-    return "<option value=''>Сети не найдены/</option>";
+    return "<option value=''>Сети не найдены</option>";
 
   String list = "";
   for (int i = 0; i < n; ++i) {
