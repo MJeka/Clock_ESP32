@@ -13,7 +13,7 @@ const WeatherIconMap weather_icons[] = {
     {3,  &ui_img_03_64_png, &ui_img_03_64_png}, // Пасмурно: day - overcast-day, night - overcast-night
     {45, &ui_img_45_64_png, &ui_img_45_64_png},  // Туман: day - fog-day, night - fog-night
     {48, &ui_img_48_64_png, &ui_img_48_64_png},  // Оседающий иней: day - fog-day, night - fog-night
-    {51, &ui_img_51_63d_64_png, &ui_img_51_63n_64_png, // Легкая морось: day - partly-cloudy-day-drizzle, night - partly-cloudy-night-drizzle
+    {51, &ui_img_51_63d_64_png, &ui_img_51_63n_64_png}, // Легкая морось: day - partly-cloudy-day-drizzle, night - partly-cloudy-night-drizzle
     {53, &ui_img_51_63d_64_png, &ui_img_51_63n_64_png}, // Умеренная морось: использование универсальной иконки drizzle
     {55, &ui_img_51_63d_64_png, &ui_img_51_63n_64_png}, // Плотная морось: использование универсальной иконки drizzle
     {61, &ui_img_51_63d_64_png, &ui_img_51_63n_64_png}, // Небольшой дождь: day - partly-cloudy-day-rain, night - partly-cloudy-night-rain

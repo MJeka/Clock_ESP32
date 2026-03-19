@@ -468,7 +468,7 @@ void wait_for_wifi() {
  */
 void sync_system_time(const char *ip_str) {
   char msg[128];
-  snprintf(msg, sizeof(msg), "Синхронизация времени...\n\nIP: %s\n\n\nv. %s", ip_str, BUILD_VERSION);
+  snprintf(msg, sizeof(msg), "Синхронизация времени...\nIP: %s\n\n\nv. %s", ip_str, BUILD_VERSION);
   update_screen_status(msg);
 
   configTzTime(TZ_INFO, ntpServer, ntpServer2);

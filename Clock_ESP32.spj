@@ -1486,8 +1486,8 @@
                 "flags": 17,
                 "strtype": "OBJECT/Position",
                 "intarray": [
-                  -115,
-                  81
+                  -105,
+                  75
                 ],
                 "InheritedType": 7
               },
@@ -1607,7 +1607,7 @@
               {
                 "nid": 1050,
                 "strtype": "IMAGE/Scale",
-                "integer": 350,
+                "integer": 300,
                 "InheritedType": 6
               },
               {
@@ -5039,7 +5039,7 @@
     "custom_variable_prefix": "uic",
     "separate_screen_save": false,
     "hierarchy_state_save": false,
-    "backup_cnt": 108,
+    "backup_cnt": 112,
     "autosave_cnt": 0,
     "group_color_cnt": 0,
     "imagebytearrayprefix": "",
