@@ -75,6 +75,7 @@ float current_temp = 0.0;
 int current_humidity = 0;
 int current_pressure = 0;
 int current_wmo_code = -1;  /**< WMO-код состояния погоды для отображения в Web UI */
+String last_weather_update = "---"; /**< Дата и время последнего успешного обновления погоды */
 float weather_lat = 50.4501; // По умолчанию Киева
 float weather_lon = 30.5234;
 
@@ -179,6 +180,16 @@ void fetch_weather() {
     current_humidity = data.humidity;
     current_pressure = data.pressure_mm;
     current_wmo_code = data.wmo_code; // Сохранение кода погоды для веба
+    
+    // Фиксация времени последнего обновления (Дата и время)
+    struct tm ti;
+    if (getLocalTime(&ti)) {
+      char buf[32];
+      snprintf(buf, sizeof(buf), "%02d.%02d.%d %02d:%02d:%02d", 
+               ti.tm_mday, ti.tm_mon + 1, ti.tm_year + 1900,
+               ti.tm_hour, ti.tm_min, ti.tm_sec);
+      last_weather_update = String(buf);
+    }
 
     // Обновление иконки и интерфейса
     update_weather_icon(data.wmo_code, data.is_day);
