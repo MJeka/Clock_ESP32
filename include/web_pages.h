@@ -122,7 +122,7 @@ const char WEB_STYLE[] PROGMEM = R"=====(
  */
 String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
                     int nStart, int nEnd, String weatherCity, String citiesJson,
-                    String buildVersion) {
+                    String buildVersion, int wmoCode) {
   String s = "<html><head><meta charset='UTF-8'>";
   s += "<link rel='icon' href='data:image/svg+xml,<svg "
        "xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text "
@@ -183,6 +183,10 @@ String getIndexPage(String networks, String savedSSID, int dBr, int nBr,
   s += "<button type='submit' class='btn-save'>ОБНОВИТЬ "
        "НАСТРОЙКИ</button></form>";
   s += "</div>";
+
+  // --- КОД ПОГОДЫ ---
+  // Просто отображаем код иконки из переменной wmo_code
+  s += "<div style='text-align:center; color:#888; margin-bottom:10px; font-size:14px;'>Код погоды (WMO): " + String(wmoCode) + "</div>";
 
   // --- КНОПКА ПЕРЕЗАГРУЗКИ В САМОМ НИЗУ ---
   s += "<button class='btn-reboot' onclick='if(confirm(\"Перезагрузить "

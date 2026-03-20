@@ -25,6 +25,7 @@ extern char password[64];
 extern char weather_city[64];
 extern float weather_lat;
 extern float weather_lon;
+extern int current_wmo_code;
 extern String apName;
 extern lv_obj_t *load_label;
 
@@ -361,7 +362,7 @@ void setupWebHandlers() {
                 getIndexPage(getCachedNetworks(), ssid, dayBrightness,
                              nightBrightness, nightStartHour, nightEndHour,
                              String(weather_city), getCitiesJson(),
-                             BUILD_VERSION));
+                             BUILD_VERSION, current_wmo_code));
   });
 
   /**

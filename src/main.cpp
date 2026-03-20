@@ -74,6 +74,7 @@ int nightEndHour = 7;     /**< Час возврата в дневной реж�
 float current_temp = 0.0;
 int current_humidity = 0;
 int current_pressure = 0;
+int current_wmo_code = -1;  /**< WMO-код состояния погоды для отображения в Web UI */
 float weather_lat = 50.4501; // По умолчанию Киева
 float weather_lon = 30.5234;
 
@@ -177,6 +178,7 @@ void fetch_weather() {
     current_temp = data.temperature;
     current_humidity = data.humidity;
     current_pressure = data.pressure_mm;
+    current_wmo_code = data.wmo_code; // Сохранение кода погоды для веба
 
     // Обновление иконки и интерфейса
     update_weather_icon(data.wmo_code, data.is_day);
