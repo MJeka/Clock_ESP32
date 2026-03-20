@@ -26,24 +26,22 @@ extern lv_obj_t *ui____initial_actions0;
 // IMAGES AND IMAGE SETS
 LV_IMG_DECLARE( ui_img_thermometer_30_png);   // assets/thermometer_30.png
 LV_IMG_DECLARE( ui_img_1191103926);   // assets/water-percent_30.png
-LV_IMG_DECLARE( ui_img_00d_64_png);   // assets/00d_64.png
-LV_IMG_DECLARE( ui_img_00n_64_png);   // assets/00n_64.png
-LV_IMG_DECLARE( ui_img_01d_64_png);   // assets/01d_64.png
-LV_IMG_DECLARE( ui_img_01n_64_png);   // assets/01n_64.png
-LV_IMG_DECLARE( ui_img_02_64_png);   // assets/02_64.png
-LV_IMG_DECLARE( ui_img_03_64_png);   // assets/03_64.png
-LV_IMG_DECLARE( ui_img_45_64_png);   // assets/45_64.png
-LV_IMG_DECLARE( ui_img_48_64_png);   // assets/48_64.png
-LV_IMG_DECLARE( ui_img_51_63d_64_png);   // assets/51_63d_64.png
-LV_IMG_DECLARE( ui_img_51_63n_64_png);   // assets/51_63n_64.png
-LV_IMG_DECLARE( ui_img_65_64_png);   // assets/65_64.png
-LV_IMG_DECLARE( ui_img_66_67_96_99_64_png);   // assets/66_67_96_99_64.png
-LV_IMG_DECLARE( ui_img_71d_64_png);   // assets/71d_64.png
-LV_IMG_DECLARE( ui_img_71n_64_png);   // assets/71n_64.png
-LV_IMG_DECLARE( ui_img_73_77_64_png);   // assets/73_77_64.png
-LV_IMG_DECLARE( ui_img_80_82_64_png);   // assets/80_82_64.png
-LV_IMG_DECLARE( ui_img_85_86_64_png);   // assets/85_86_64.png
-LV_IMG_DECLARE( ui_img_95_64_png);   // assets/95_64.png
+LV_IMG_DECLARE( ui_img_00d_75_png);   // assets/00d_75.png
+LV_IMG_DECLARE( ui_img_00n_75_png);   // assets/00n_75.png
+LV_IMG_DECLARE( ui_img_01d_75_png);   // assets/01d_75.png
+LV_IMG_DECLARE( ui_img_01n_75_png);   // assets/01n_75.png
+LV_IMG_DECLARE( ui_img_02_75_png);   // assets/02_75.png
+LV_IMG_DECLARE( ui_img_03_75_png);   // assets/03_75.png
+LV_IMG_DECLARE( ui_img_45_75_png);   // assets/45_75.png
+LV_IMG_DECLARE( ui_img_48_75_png);   // assets/48_75.png
+LV_IMG_DECLARE( ui_img_51_55_61_75_png);   // assets/51_55_61_75.png
+LV_IMG_DECLARE( ui_img_56_57_66_67_75_png);   // assets/56_57_66_67_75.png
+LV_IMG_DECLARE( ui_img_63_75_png);   // assets/63_75.png
+LV_IMG_DECLARE( ui_img_65_80_82_75_png);   // assets/65_80_82_75.png
+LV_IMG_DECLARE( ui_img_85_86_75_png);   // assets/85_86_75.png
+LV_IMG_DECLARE( ui_img_95_75_png);   // assets/95_75.png
+LV_IMG_DECLARE( ui_img_96_99_75_png);   // assets/96_99_75.png
+LV_IMG_DECLARE( ui_img_71_77_75_png);   // assets/71_77_75.png
 
 // FONTS
 LV_FONT_DECLARE( ui_font_dsdigital128);

@@ -32,16 +32,14 @@ extern lv_obj_t *ui_Image02;
 extern lv_obj_t *ui_Image03;
 extern lv_obj_t *ui_Image45;
 extern lv_obj_t *ui_Image48;
-extern lv_obj_t *ui_Image5163d;
-extern lv_obj_t *ui_Image5163n;
-extern lv_obj_t *ui_Image65;
-extern lv_obj_t *ui_Image66679699;
-extern lv_obj_t *ui_Image71d;
-extern lv_obj_t *ui_Image71n;
-extern lv_obj_t *ui_Image7377;
-extern lv_obj_t *ui_Image8082;
+extern lv_obj_t *ui_Image515561;
+extern lv_obj_t *ui_Image56576667;
+extern lv_obj_t *ui_Image63;
+extern lv_obj_t *ui_Image658082;
 extern lv_obj_t *ui_Image8586;
 extern lv_obj_t *ui_Image95;
+extern lv_obj_t *ui_Image9699;
+extern lv_obj_t *ui_Image7177;
 // CUSTOM VARIABLES
 
 #ifdef __cplusplus
