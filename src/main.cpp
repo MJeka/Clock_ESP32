@@ -5,6 +5,9 @@
 #define BUILD_VERSION "unknown"
 #endif
 
+// Раскомментируйте для активации режима циклической проверки всех иконок
+// #define TEST_WEATHER_ICONS 
+
 #include "provider_om.h" // Добавляем новый заголовочный файл
 #include "secrets.h" // Конфиденциальные данные и макроопределения (API-ключи, адреса NTP)
 #include "ui.h" // Объявления объектов графического интерфейса (экспорт из SquareLine Studio)
@@ -55,6 +58,13 @@ bool isConfigMode = false;    // Флаг активного режима нас
 uint32_t configStartTime = 0; // Время запуска режима AP
 uint32_t lastDisplayUpdate = 0; // Время последнего обновления экрана
 const uint32_t reconnectInterval = 30 * 1000; // Интервал повторной попытки подключения к Wi-Fi (30 секунд)
+
+#ifdef TEST_WEATHER_ICONS
+uint32_t lastTestIconChange = 0;   /**< Таймер для режима тестирования иконок */
+uint32_t testIconInterval = 2 * 1000; /**< Интервал смены иконок в режиме теста (мс) */
+int testIconIndex = 0;             /**< Текущий индекс иконки в массиве */
+bool testIconIsDay = true;         /**< Флаг режима (день/ночь) для теста */
+#endif
 
 /**
  * @section DISPLAY_BRIGHTNESS_SETTINGS
@@ -157,10 +167,46 @@ void update_weather_icon(int wmo_code, int is_day) {
   // Тонирование иконки в более теплый цвет (закомментировано, так как требует
   // наличия картинки) if (target_img != nullptr) {
   //   lv_obj_set_style_img_recolor(ui_uiLabelWeather, lv_color_hex(0xFFA500),
-  //   0); // Оранжевый lv_obj_set_style_img_recolor_opa(ui_uiLabelWeather, 120,
+  //   0); // Оранжевый
+  //   lv_obj_set_style_img_recolor_opa(ui_uiLabelWeather, 120,
   //   0); // Легкое тонирование
   // }
 }
+
+#ifdef TEST_WEATHER_ICONS
+/**
+ * @brief Функция циклического тестирования иконок погоды.
+ * Перебирает весь массив weather_icons, показывая каждую иконку сначала в дневном,
+ * затем в ночном режиме.
+ */
+void handle_weather_test() {
+  uint32_t now = millis();
+  if (now - lastTestIconChange >= testIconInterval) {
+    if (weather_icons_count > 0) {
+      // Получаем код из справочника по индексу
+      int wmo_code = weather_icons[testIconIndex].code;
+
+      logInfo("[TEST] Switching weather icon: Code %d, Mode: %s", 
+              wmo_code, testIconIsDay ? "DAY" : "NIGHT");
+
+      // Обновляем иконку на экране через стандартную функцию
+      update_weather_icon(wmo_code, testIconIsDay);
+      
+      // Логика переключения: День -> Ночь -> Следующая иконка
+      if (testIconIsDay) {
+        testIconIsDay = false; // Переключаем на ночь для этого же кода
+      } else {
+        testIconIsDay = true;  // Возвращаем день
+        testIconIndex++;       // Переходим к следующему WMO коду
+        if (testIconIndex >= weather_icons_count) {
+          testIconIndex = 0;   // Зацикливаем массив
+        }
+      }
+    }
+    lastTestIconChange = now;
+  }
+}
+#endif
 
 /**
  * @brief Запрос данных о погоде через провайдер и обновление интерфейса.
@@ -649,6 +695,11 @@ void loop() {
     update_ui_elements();
     lastUpdateTime = now;
   }
+
+#ifdef TEST_WEATHER_ICONS
+  // Режим тестирования: игнорирует реальную погоду и просто крутит иконки
+  handle_weather_test();
+#endif
 
   // Графика: Вызов обработчика таймеров и отрисовки LVGL
   lv_timer_handler();
